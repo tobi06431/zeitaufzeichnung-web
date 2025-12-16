@@ -1,108 +1,200 @@
-/* ===== Grundlayout ===== */
+/* ================= ORTSVORSCHLÄGE ================= */
 
-body {
-  font-family: system-ui, -apple-system;
-  padding: 1rem;
-  background-color: #fafafa;
+const ORTE_HKK = [
+  "St. Georg Dom",
+  "St. Antonius Eschhofen",
+  "St. Hildegard Limburg",
+  "St. Jakobus Lindenholzhausen",
+  "St. Johannes d.T. Elz",
+  "St. Josef Staffel",
+  "St. Lubentius Dietkirchen",
+  "St. Marien Limburg",
+  "St. Nikolaus Dehrn",
+  "St. Servatius Offheim"
+];
+
+/* ================= PROFIL (dauerhaft speichern) ================= */
+
+const STORAGE_KEY_PROFILE = "za_profile_v1";
+
+function saveProfileField(id, value) {
+  const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
+  const obj = raw ? JSON.parse(raw) : {};
+  obj[id] = value;
+  localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(obj));
 }
 
-h2 {
-  margin-top: 0;
+function loadProfileField(id) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
+    const obj = raw ? JSON.parse(raw) : {};
+    return obj[id] || "";
+  } catch {
+    return "";
+  }
 }
 
-/* ===== Formulare ===== */
+/* ================= HILFSFUNKTIONEN ================= */
 
-label {
-  display: block;
-  margin-top: 0.8rem;
-  font-weight: 600;
+function getSelectedPfarrei() {
+  return (document.getElementById("kirchengemeinde_input").value || "").trim();
 }
 
-input,
-select {
-  width: 100%;
-  padding: 0.6rem;
-  font-size: 16px;
-  box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+function setOrteDatalist(options) {
+  const dl = document.getElementById("orte_datalist");
+  dl.innerHTML = "";
+  options.forEach(o => {
+    const opt = document.createElement("option");
+    opt.value = o;
+    dl.appendChild(opt);
+  });
 }
 
-input:focus,
-select:focus {
-  outline: none;
-  border-color: #0077cc;
+function updateOrtSuggestions() {
+  if (getSelectedPfarrei() === "Heilige Katharina Kaspar Limburger Land") {
+    setOrteDatalist(ORTE_HKK);
+  } else {
+    setOrteDatalist([]);
+  }
 }
 
-/* ===== Zeile mit Button (Datum / Heute) ===== */
+/* ================= ZEIT-RUNDUNG ================= */
 
-.row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+function roundTimeTo5Minutes(t) {
+  if (!t) return "";
+  let [h, m] = t.split(":").map(Number);
+  m = Math.round(m / 5) * 5;
+  if (m === 60) { h = (h + 1) % 24; m = 0; }
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-.row > * {
-  flex: 1;
+function enforce5MinuteStep(el) {
+  const r = roundTimeTo5Minutes(el.value);
+  if (r && r !== el.value) el.value = r;
 }
 
-/* ===== Buttons ===== */
+/* ================= GOTTESDIENSTE-SPEICHER ================= */
 
-button {
-  padding: 0.7rem 1rem;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  background-color: #0077cc;
-  color: white;
+let gottesdienste = [];
+let currentStorageKey = "";
+
+function normalizeKeyPart(s) {
+  return (s || "").trim().replace(/\s+/g, " ").replace(/[|]/g, "");
 }
 
-button:hover {
-  background-color: #005fa3;
+function getStorageKey() {
+  const p = normalizeKeyPart(document.getElementById("kirchengemeinde_input").value) || "UNBEKANNT";
+  const m = normalizeKeyPart(document.getElementById("monatjahr_input").value) || "OHNE_MONAT";
+  return `za_gd_v2|${p}|${m}`;
 }
 
-button[type="button"] {
-  background-color: #6c757d;
+function saveGottesdienste() {
+  localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
 }
 
-button[type="button"]:hover {
-  background-color: #545b62;
+function loadGottesdienste() {
+  const raw = localStorage.getItem(currentStorageKey);
+  gottesdienste = raw ? JSON.parse(raw) : [];
 }
 
-/* ===== Aktionen ===== */
+/* ================= CRUD ================= */
 
-.actions {
-  margin-top: 1.2rem;
+function updateListe() {
+  const tbody = document.getElementById("gd_liste");
+  tbody.innerHTML = "";
+
+  gottesdienste.forEach((gd, i) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${gd.kirchort}</td>
+      <td>${gd.datum}</td>
+      <td>${gd.satz}</td>
+      <td>${gd.beginn}</td>
+      <td>${gd.ende}</td>
+      <td><button type="button" onclick="removeGottesdienst(${i})">X</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  document.getElementById("gottesdienste_json").value = JSON.stringify(gottesdienste);
 }
 
-/* ===== Tabelle ===== */
+function addGottesdienst() {
+  enforce5MinuteStep(gd_beginn);
+  enforce5MinuteStep(gd_ende);
 
-table {
-  margin-top: 1rem;
-  border-collapse: collapse;
-  width: 100%;
-  background-color: white;
+  const gd = {
+    kirchort: gd_kirchort.value.trim(),
+    datum: gd_datum.value,
+    satz: gd_satz.value,
+    beginn: gd_beginn.value,
+    ende: gd_ende.value
+  };
+
+  if (Object.values(gd).some(v => !v)) {
+    alert("Bitte alle Felder ausfüllen.");
+    return;
+  }
+
+  gottesdienste.push(gd);
+  saveGottesdienste();
+  updateListe();
+
+  gd_kirchort.value = gd_datum.value = gd_satz.value = gd_beginn.value = gd_ende.value = "";
 }
 
-th,
-td {
-  padding: 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+function removeGottesdienst(i) {
+  gottesdienste.splice(i, 1);
+  saveGottesdienste();
+  updateListe();
 }
 
-th {
-  background-color: #f0f0f0;
-  font-weight: 600;
+function clearGottesdienste() {
+  if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
+  gottesdienste = [];
+  localStorage.removeItem(currentStorageKey);
+  updateListe();
 }
 
-/* ===== Gottesdienst-Box ===== */
+/* ================= INIT ================= */
 
-.gd-box {
-  border: 1px solid #ccc;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background-color: white;
-  border-radius: 4px;
+function setKirchengemeindeFromSelect() {
+  kirchengemeinde_input.value = kirchengemeinde_select.value;
+  updateOrtSuggestions();
+  handleContextChange();
 }
+
+function handleContextChange() {
+  const newKey = getStorageKey();
+  if (newKey === currentStorageKey) return;
+  if (currentStorageKey) saveGottesdienste();
+  currentStorageKey = newKey;
+  loadGottesdienste();
+  updateListe();
+}
+
+function init() {
+  currentStorageKey = getStorageKey();
+  loadGottesdienste();
+  updateListe();
+  updateOrtSuggestions();
+
+  ["gd_beginn", "gd_ende"].forEach(id =>
+    document.getElementById(id).addEventListener("blur", e => enforce5MinuteStep(e.target))
+  );
+
+  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = loadProfileField(id);
+    el.addEventListener("input", () => saveProfileField(id, el.value));
+  });
+
+  kirchengemeinde_input.addEventListener("input", handleContextChange);
+  monatjahr_input.addEventListener("input", handleContextChange);
+}
+
+document.addEventListener("DOMContentLoaded", init);
+
+/* ===== global ===== */
+window.addGottesdienst = addGottesdienst;
+window

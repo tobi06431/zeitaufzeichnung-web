@@ -1,4 +1,4 @@
-/* ================= ORTSVORSCHLÄGE pro Pfarrei ================= */
+/* ================= ORTSVORSCHLÄGE ================= */
 
 const ORTE_HKK = [
   "St. Georg Dom",
@@ -13,6 +13,29 @@ const ORTE_HKK = [
   "St. Servatius Offheim"
 ];
 
+/* ================= PROFIL (dauerhaft speichern) ================= */
+
+const STORAGE_KEY_PROFILE = "za_profile_v1";
+
+function saveProfileField(id, value) {
+  const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
+  const obj = raw ? JSON.parse(raw) : {};
+  obj[id] = value;
+  localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(obj));
+}
+
+function loadProfileField(id) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
+    const obj = raw ? JSON.parse(raw) : {};
+    return obj[id] || "";
+  } catch {
+    return "";
+  }
+}
+
+/* ================= HILFSFUNKTIONEN ================= */
+
 function getSelectedPfarrei() {
   return (document.getElementById("kirchengemeinde_input").value || "").trim();
 }
@@ -20,7 +43,7 @@ function getSelectedPfarrei() {
 function setOrteDatalist(options) {
   const dl = document.getElementById("orte_datalist");
   dl.innerHTML = "";
-  (options || []).forEach(o => {
+  options.forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     dl.appendChild(opt);
@@ -35,86 +58,46 @@ function updateOrtSuggestions() {
   }
 }
 
-/* ================= 5-MINUTEN-ERZWINGUNG ================= */
+/* ================= ZEIT-RUNDUNG ================= */
 
 function roundTimeTo5Minutes(t) {
   if (!t) return "";
   let [h, m] = t.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return t;
-
   m = Math.round(m / 5) * 5;
   if (m === 60) { h = (h + 1) % 24; m = 0; }
-
-  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 function enforce5MinuteStep(el) {
-  if (!el) return;
   const r = roundTimeTo5Minutes(el.value);
   if (r && r !== el.value) el.value = r;
 }
 
-function setupTimeEnforce() {
-  ["gd_beginn", "gd_ende"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("change", () => enforce5MinuteStep(el));
-    el.addEventListener("blur", () => enforce5MinuteStep(el));
-  });
-}
-
-/* ================= Browser-Speicher: getrennt nach Pfarrei + Monat ================= */
+/* ================= GOTTESDIENSTE-SPEICHER ================= */
 
 let gottesdienste = [];
 let currentStorageKey = "";
 
 function normalizeKeyPart(s) {
-  return (s || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/[|]/g, "");
+  return (s || "").trim().replace(/\s+/g, " ").replace(/[|]/g, "");
 }
 
 function getStorageKey() {
-  const pfarrei = normalizeKeyPart(document.getElementById("kirchengemeinde_input").value);
-  const monat = normalizeKeyPart(document.getElementById("monatjahr_input").value);
-
-  const p = pfarrei || "UNBEKANNT_PFARREI";
-  const m = monat || "OHNE_MONAT";
-
+  const p = normalizeKeyPart(document.getElementById("kirchengemeinde_input").value) || "UNBEKANNT";
+  const m = normalizeKeyPart(document.getElementById("monatjahr_input").value) || "OHNE_MONAT";
   return `za_gd_v2|${p}|${m}`;
 }
 
-function saveGottesdiensteToStorage() {
-  if (!currentStorageKey) currentStorageKey = getStorageKey();
+function saveGottesdienste() {
   localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
 }
 
-function loadGottesdiensteFromStorage(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) {
-    return [];
-  }
+function loadGottesdienste() {
+  const raw = localStorage.getItem(currentStorageKey);
+  gottesdienste = raw ? JSON.parse(raw) : [];
 }
 
-function handleContextChange() {
-  const newKey = getStorageKey();
-
-  if (newKey === currentStorageKey) return;
-
-  if (currentStorageKey) {
-    localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
-  }
-
-  currentStorageKey = newKey;
-  gottesdienste = loadGottesdiensteFromStorage(currentStorageKey);
-  updateListe();
-}
-
-/* ================= Gottesdienste CRUD ================= */
+/* ================= CRUD ================= */
 
 function updateListe() {
   const tbody = document.getElementById("gd_liste");
@@ -128,98 +111,91 @@ function updateListe() {
       <td>${gd.satz}</td>
       <td>${gd.beginn}</td>
       <td>${gd.ende}</td>
-      <td>
-        <button type="button" onclick="removeGottesdienst(${i})">X</button>
-      </td>
+      <td><button type="button" onclick="removeGottesdienst(${i})">X</button></td>
     `;
     tbody.appendChild(row);
   });
 
-  document.getElementById("gottesdienste_json").value =
-    JSON.stringify(gottesdienste);
+  document.getElementById("gottesdienste_json").value = JSON.stringify(gottesdienste);
 }
 
 function addGottesdienst() {
-  enforce5MinuteStep(document.getElementById("gd_beginn"));
-  enforce5MinuteStep(document.getElementById("gd_ende"));
+  enforce5MinuteStep(gd_beginn);
+  enforce5MinuteStep(gd_ende);
 
-  const kirchort = document.getElementById("gd_kirchort").value.trim();
-  const datum = document.getElementById("gd_datum").value;
-  const satz = document.getElementById("gd_satz").value;
-  const beginn = document.getElementById("gd_beginn").value;
-  const ende = document.getElementById("gd_ende").value;
+  const gd = {
+    kirchort: gd_kirchort.value.trim(),
+    datum: gd_datum.value,
+    satz: gd_satz.value,
+    beginn: gd_beginn.value,
+    ende: gd_ende.value
+  };
 
-  if (!kirchort || !datum || !satz || !beginn || !ende) {
+  if (Object.values(gd).some(v => !v)) {
     alert("Bitte alle Felder ausfüllen.");
     return;
   }
 
-  gottesdienste.push({ kirchort, datum, satz, beginn, ende });
-
-  document.getElementById("gd_kirchort").value = "";
-  document.getElementById("gd_datum").value = "";
-  document.getElementById("gd_satz").value = "";
-  document.getElementById("gd_beginn").value = "";
-  document.getElementById("gd_ende").value = "";
-
+  gottesdienste.push(gd);
+  saveGottesdienste();
   updateListe();
-  saveGottesdiensteToStorage();
+
+  gd_kirchort.value = gd_datum.value = gd_satz.value = gd_beginn.value = gd_ende.value = "";
 }
 
 function removeGottesdienst(i) {
   gottesdienste.splice(i, 1);
+  saveGottesdienste();
   updateListe();
-  saveGottesdiensteToStorage();
 }
 
 function clearGottesdienste() {
-  if (!confirm("Willst du wirklich alle Gottesdienste dieser Aufzeichnung löschen?")) return;
+  if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
   gottesdienste = [];
+  localStorage.removeItem(currentStorageKey);
   updateListe();
-  if (currentStorageKey) localStorage.removeItem(currentStorageKey);
 }
 
 /* ================= INIT ================= */
 
 function setKirchengemeindeFromSelect() {
-  const sel = document.getElementById("kirchengemeinde_select");
-  if (sel.value) {
-    document.getElementById("kirchengemeinde_input").value = sel.value;
-  }
+  kirchengemeinde_input.value = kirchengemeinde_select.value;
   updateOrtSuggestions();
   handleContextChange();
 }
 
-function init() {
-  // Ortsvorschläge + Kontextwechsel
-  const pfarreiInput = document.getElementById("kirchengemeinde_input");
-  const monatInput = document.getElementById("monatjahr_input");
-
-  pfarreiInput.addEventListener("input", () => {
-    updateOrtSuggestions();
-    handleContextChange();
-  });
-
-  monatInput.addEventListener("input", handleContextChange);
-
-  updateOrtSuggestions();
-  setupTimeEnforce();
-
-  // Initialer Kontext
-  currentStorageKey = getStorageKey();
-  gottesdienste = loadGottesdiensteFromStorage(currentStorageKey);
+function handleContextChange() {
+  const newKey = getStorageKey();
+  if (newKey === currentStorageKey) return;
+  if (currentStorageKey) saveGottesdienste();
+  currentStorageKey = newKey;
+  loadGottesdienste();
   updateListe();
+}
 
-  // Beim Submit JSON sicher setzen
-  document.querySelector("form").addEventListener("submit", () => {
-    document.getElementById("gottesdienste_json").value =
-      JSON.stringify(gottesdienste);
+function init() {
+  currentStorageKey = getStorageKey();
+  loadGottesdienste();
+  updateListe();
+  updateOrtSuggestions();
+
+  ["gd_beginn", "gd_ende"].forEach(id =>
+    document.getElementById(id).addEventListener("blur", e => enforce5MinuteStep(e.target))
+  );
+
+  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = loadProfileField(id);
+    el.addEventListener("input", () => saveProfileField(id, el.value));
   });
+
+  kirchengemeinde_input.addEventListener("input", handleContextChange);
+  monatjahr_input.addEventListener("input", handleContextChange);
 }
 
 document.addEventListener("DOMContentLoaded", init);
 
-/* ================= GLOBAL EXPORT (für onclick="...") ================= */
+/* ===== global ===== */
 window.addGottesdienst = addGottesdienst;
 window.removeGottesdienst = removeGottesdienst;
 window.clearGottesdienste = clearGottesdienste;
