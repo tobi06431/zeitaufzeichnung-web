@@ -67,12 +67,13 @@ function populateMonatJahrSelect() {
   select.innerHTML = "";
 
   const today = new Date();
-  const startYear = today.getFullYear();
-  const startMonth = today.getMonth(); // 0-basiert
 
-  // z.B. 36 Monate voraus
-  for (let i = 0; i < 36; i++) {
-    const d = new Date(startYear, startMonth + i, 1);
+  const PAST_MONTHS = 12;    // 12 Monate rückwirkend
+  const FUTURE_MONTHS = 24;  // 24 Monate voraus
+
+  for (let offset = -PAST_MONTHS; offset <= FUTURE_MONTHS; offset++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
     const value = `${month}/${year}`;
@@ -81,9 +82,18 @@ function populateMonatJahrSelect() {
     opt.value = value;
     opt.textContent = value;
 
+    // aktuellen Monat vorauswählen
+    if (
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear()
+    ) {
+      opt.selected = true;
+    }
+
     select.appendChild(opt);
   }
 }
+
 
 /* ================= ZEIT-RUNDUNG (5 Minuten) ================= */
 
