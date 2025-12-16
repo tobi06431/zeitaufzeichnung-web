@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Dec 15 18:59:52 2025
-
-@author: tobiaslassmann
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 from flask import Flask, render_template, request, send_file
 from datetime import date
 import tempfile
-import os
 
 from pdf_service import create_pdf
 
@@ -22,7 +13,12 @@ app = Flask(__name__)
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        form_data = dict(request.form)
+        # request.form ist ein ImmutableMultiDict -> wir wollen ein normales dict
+        form_data = request.form.to_dict(flat=True)
+
+        # Sicherheits-Fallback: falls das Hidden-Feld mal leer/fehlend ist
+        # (z.B. alter Browser-Cache oder Template-Fehler)
+        form_data.setdefault("Gottesdienste", "[]")
 
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
         tmp.close()
@@ -42,4 +38,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000, debug=True)
