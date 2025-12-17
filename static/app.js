@@ -36,8 +36,12 @@ function loadProfileField(id) {
 
 /* ================= HILFSFUNKTIONEN ================= */
 
+function normalizeKeyPart(s) {
+  return (s || "").trim().replace(/\s+/g, " ").replace(/[|]/g, "");
+}
+
 function getSelectedPfarrei() {
-  return (document.getElementById("kirchengemeinde_input").value || "").trim();
+  return normalizeKeyPart(document.getElementById("kirchengemeinde_input").value);
 }
 
 function setOrteDatalist(options) {
@@ -58,7 +62,7 @@ function updateOrtSuggestions() {
   }
 }
 
-/* ================= MONAT / JAHR (festes Dropdown) ================= */
+/* ================= MONAT / JAHR ================= */
 
 function populateMonatJahrSelect() {
   const select = document.getElementById("monatjahr_input");
@@ -67,22 +71,17 @@ function populateMonatJahrSelect() {
   select.innerHTML = "";
 
   const today = new Date();
-
-  const PAST_MONTHS = 12;    // 12 Monate rückwirkend
-  const FUTURE_MONTHS = 24;  // 24 Monate voraus
+  const PAST_MONTHS = 12;
+  const FUTURE_MONTHS = 24;
 
   for (let offset = -PAST_MONTHS; offset <= FUTURE_MONTHS; offset++) {
     const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    const value = `${month}/${year}`;
+    const value = `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 
     const opt = document.createElement("option");
     opt.value = value;
     opt.textContent = value;
 
-    // aktuellen Monat vorauswählen
     if (
       d.getMonth() === today.getMonth() &&
       d.getFullYear() === today.getFullYear()
@@ -94,47 +93,92 @@ function populateMonatJahrSelect() {
   }
 }
 
-
 /* ================= ZEIT-RUNDUNG (5 Minuten) ================= */
 
 function roundTimeTo5Minutes(t) {
   if (!t) return "";
   let [h, m] = t.split(":").map(Number);
   m = Math.round(m / 5) * 5;
-  if (m === 60) {
-    h = (h + 1) % 24;
-    m = 0;
-  }
+  if (m === 60) { h = (h + 1) % 24; m = 0; }
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 function enforce5MinuteStep(el) {
+  if (!el) return;
   const r = roundTimeTo5Minutes(el.value);
   if (r && r !== el.value) el.value = r;
 }
 
-/* ================= GOTTESDIENSTE-SPEICHER ================= */
+/* ================= ZEITEN PRO (KIRCHORT + WOCHENTAG) ================= */
+
+function getWeekdayKey(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][d.getDay()];
+}
+
+function getTimesStorageKey() {
+  const p = getSelectedPfarrei() || "UNBEKANNT_PFARREI";
+  return `za_times_v1|${p}`;
+}
+
+function loadTimesMap() {
+  try {
+    const raw = localStorage.getItem(getTimesStorageKey());
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveTimesMap(map) {
+  localStorage.setItem(getTimesStorageKey(), JSON.stringify(map));
+}
+
+function buildTimesKey(kirchort, datum) {
+  const k = normalizeKeyPart(kirchort);
+  const w = getWeekdayKey(datum);
+  return k && w ? `${k}|${w}` : "";
+}
+
+function applySavedTimesIfAvailable() {
+  const kirchort = gd_kirchort.value.trim();
+  const datum = gd_datum.value;
+  const key = buildTimesKey(kirchort, datum);
+  if (!key) return;
+
+  const map = loadTimesMap();
+  const saved = map[key];
+  if (!saved) return;
+
+  if (!gd_beginn.value) gd_beginn.value = saved.beginn;
+  if (!gd_ende.value) gd_ende.value = saved.ende;
+}
+
+function saveTimesForEntry(kirchort, datum, beginn, ende) {
+  const key = buildTimesKey(kirchort, datum);
+  if (!key) return;
+
+  const map = loadTimesMap();
+  map[key] = { beginn, ende };
+  saveTimesMap(map);
+}
+
+/* ================= GOTTESDIENSTE ================= */
 
 let gottesdienste = [];
 let currentStorageKey = "";
 
-function normalizeKeyPart(s) {
-  return (s || "").trim().replace(/\s+/g, " ").replace(/[|]/g, "");
-}
-
 function getStorageKey() {
-  const p =
-    normalizeKeyPart(document.getElementById("kirchengemeinde_input").value) ||
-    "UNBEKANNT_PFARREI";
-  const m =
-    normalizeKeyPart(document.getElementById("monatjahr_input").value) ||
-    "OHNE_MONAT";
+  const p = getSelectedPfarrei() || "UNBEKANNT_PFARREI";
+  const m = normalizeKeyPart(monatjahr_input.value) || "OHNE_MONAT";
   return `za_gd_v2|${p}|${m}`;
 }
 
 function saveGottesdienste() {
-  if (!currentStorageKey) return;
-  localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
+  if (currentStorageKey) {
+    localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
+  }
 }
 
 function loadGottesdienste() {
@@ -145,8 +189,6 @@ function loadGottesdienste() {
     gottesdienste = [];
   }
 }
-
-/* ================= CRUD ================= */
 
 function updateListe() {
   const tbody = document.getElementById("gd_liste");
@@ -160,15 +202,12 @@ function updateListe() {
       <td>${gd.satz}</td>
       <td>${gd.beginn}</td>
       <td>${gd.ende}</td>
-      <td>
-        <button type="button" onclick="removeGottesdienst(${i})">X</button>
-      </td>
+      <td><button type="button" onclick="removeGottesdienst(${i})">X</button></td>
     `;
     tbody.appendChild(row);
   });
 
-  document.getElementById("gottesdienste_json").value =
-    JSON.stringify(gottesdienste);
+  gottesdienste_json.value = JSON.stringify(gottesdienste);
 }
 
 function addGottesdienst() {
@@ -189,6 +228,7 @@ function addGottesdienst() {
   }
 
   gottesdienste.push(gd);
+  saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende);
   saveGottesdienste();
   updateListe();
 
@@ -208,11 +248,11 @@ function removeGottesdienst(i) {
 function clearGottesdienste() {
   if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
   gottesdienste = [];
-  if (currentStorageKey) localStorage.removeItem(currentStorageKey);
+  localStorage.removeItem(currentStorageKey);
   updateListe();
 }
 
-/* ================= CONTEXT / INIT ================= */
+/* ================= INIT ================= */
 
 function setKirchengemeindeFromSelect() {
   kirchengemeinde_input.value = kirchengemeinde_select.value;
@@ -225,14 +265,13 @@ function handleContextChange() {
   if (newKey === currentStorageKey) return;
 
   if (currentStorageKey) saveGottesdienste();
-
   currentStorageKey = newKey;
   loadGottesdienste();
   updateListe();
 }
 
 function init() {
-  populateMonatJahrSelect();     // <<< NEU
+  populateMonatJahrSelect();
   updateOrtSuggestions();
 
   currentStorageKey = getStorageKey();
@@ -240,10 +279,7 @@ function init() {
   updateListe();
 
   ["gd_beginn", "gd_ende"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("blur", () => enforce5MinuteStep(el));
-    }
+    document.getElementById(id)?.addEventListener("blur", e => enforce5MinuteStep(e.target));
   });
 
   ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach(id => {
@@ -253,13 +289,16 @@ function init() {
     el.addEventListener("input", () => saveProfileField(id, el.value));
   });
 
+  gd_kirchort.addEventListener("change", applySavedTimesIfAvailable);
+  gd_datum.addEventListener("change", applySavedTimesIfAvailable);
+
   kirchengemeinde_input.addEventListener("input", handleContextChange);
   monatjahr_input.addEventListener("change", handleContextChange);
 }
 
 document.addEventListener("DOMContentLoaded", init);
 
-/* ===== global (für HTML onclick) ===== */
+/* ===== global ===== */
 window.addGottesdienst = addGottesdienst;
 window.removeGottesdienst = removeGottesdienst;
 window.clearGottesdienste = clearGottesdienste;
