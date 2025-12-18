@@ -37,23 +37,17 @@ function loadProfileField(id) {
 /* ================= HILFSFUNKTIONEN ================= */
 
 function normalizeKeyPart(s) {
-  return (s || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/[|]/g, "");
+  return (s || "").trim().replace(/\s+/g, " ").replace(/[|]/g, "");
 }
 
 function getSelectedPfarrei() {
-  const el = document.getElementById("kirchengemeinde_input");
-  return normalizeKeyPart(el ? el.value : "");
+  return normalizeKeyPart(document.getElementById("kirchengemeinde_input").value);
 }
 
 function setOrteDatalist(options) {
   const dl = document.getElementById("orte_datalist");
-  if (!dl) return;
-
   dl.innerHTML = "";
-  (options || []).forEach((o) => {
+  options.forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     dl.appendChild(opt);
@@ -61,8 +55,7 @@ function setOrteDatalist(options) {
 }
 
 function updateOrtSuggestions() {
-  // Vergleich auf normalisiertem String (robuster)
-  if (getSelectedPfarrei() === normalizeKeyPart("Heilige Katharina Kaspar Limburger Land")) {
+  if (getSelectedPfarrei() === "Heilige Katharina Kaspar Limburger Land") {
     setOrteDatalist(ORTE_HKK);
   } else {
     setOrteDatalist([]);
@@ -89,10 +82,7 @@ function populateMonatJahrSelect() {
     opt.value = value;
     opt.textContent = value;
 
-    if (
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
-    ) {
+    if (d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
       opt.selected = true;
     }
 
@@ -100,18 +90,75 @@ function populateMonatJahrSelect() {
   }
 }
 
+/* ================= DATUM-RESTRIKTION (nur ausgewählter Monat) ================= */
+
+function parseMonatJahr(value) {
+  // erwartet "MM/YYYY"
+  const m = (value || "").trim().match(/^(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const month = Number(m[1]); // 1..12
+  const year = Number(m[2]);
+  if (!month || month < 1 || month > 12) return null;
+  return { month, year };
+}
+
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getMonthBoundsFromSelect() {
+  const sel = document.getElementById("monatjahr_input");
+  if (!sel) return null;
+
+  const parsed = parseMonatJahr(sel.value);
+  if (!parsed) return null;
+
+  const { month, year } = parsed;
+
+  // JS Date: monthIndex 0..11
+  const first = new Date(year, month - 1, 1);
+  const last = new Date(year, month, 0); // Tag 0 des Folgemonats = letzter Tag des Monats
+
+  return {
+    min: toISODate(first),
+    max: toISODate(last),
+    year,
+    month
+  };
+}
+
+function applyDateRestriction() {
+  const bounds = getMonthBoundsFromSelect();
+  const dateInput = document.getElementById("gd_datum");
+  if (!dateInput || !bounds) return;
+
+  dateInput.min = bounds.min;
+  dateInput.max = bounds.max;
+
+  // falls bereits ein Datum drin ist, das nicht passt -> löschen
+  if (dateInput.value && (dateInput.value < bounds.min || dateInput.value > bounds.max)) {
+    dateInput.value = "";
+    alert("Das Datum muss im ausgewählten Monat/Jahr liegen.");
+  }
+}
+
+function isDateWithinSelectedMonth(dateStr) {
+  const bounds = getMonthBoundsFromSelect();
+  if (!bounds) return true; // wenn noch nichts gewählt, nicht blockieren
+  if (!dateStr) return false;
+  return dateStr >= bounds.min && dateStr <= bounds.max;
+}
+
 /* ================= ZEIT-RUNDUNG (5 Minuten) ================= */
 
 function roundTimeTo5Minutes(t) {
   if (!t) return "";
   let [h, m] = t.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return t;
-
   m = Math.round(m / 5) * 5;
-  if (m === 60) {
-    h = (h + 1) % 24;
-    m = 0;
-  }
+  if (m === 60) { h = (h + 1) % 24; m = 0; }
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
@@ -154,18 +201,8 @@ function buildTimesKey(kirchort, datum) {
 }
 
 function applySavedTimesIfAvailable() {
-  // Global IDs aus dem HTML sind in Browsern meist als Variablen verfügbar,
-  // aber wir holen sie sicherheitshalber über document.getElementById:
-  const kirchortEl = document.getElementById("gd_kirchort");
-  const datumEl = document.getElementById("gd_datum");
-  const beginnEl = document.getElementById("gd_beginn");
-  const endeEl = document.getElementById("gd_ende");
-
-  if (!kirchortEl || !datumEl || !beginnEl || !endeEl) return;
-
-  const kirchort = kirchortEl.value.trim();
-  const datum = datumEl.value;
-
+  const kirchort = gd_kirchort.value.trim();
+  const datum = gd_datum.value;
   const key = buildTimesKey(kirchort, datum);
   if (!key) return;
 
@@ -173,9 +210,8 @@ function applySavedTimesIfAvailable() {
   const saved = map[key];
   if (!saved) return;
 
-  // Nur vorbelegen, wenn Feld leer ist (User kann trotzdem überschreiben)
-  if (!beginnEl.value) beginnEl.value = saved.beginn;
-  if (!endeEl.value) endeEl.value = saved.ende;
+  if (!gd_beginn.value) gd_beginn.value = saved.beginn;
+  if (!gd_ende.value) gd_ende.value = saved.ende;
 }
 
 function saveTimesForEntry(kirchort, datum, beginn, ende) {
@@ -194,8 +230,7 @@ let currentStorageKey = "";
 
 function getStorageKey() {
   const p = getSelectedPfarrei() || "UNBEKANNT_PFARREI";
-  const monatEl = document.getElementById("monatjahr_input");
-  const m = normalizeKeyPart(monatEl ? monatEl.value : "") || "OHNE_MONAT";
+  const m = normalizeKeyPart(monatjahr_input.value) || "OHNE_MONAT";
   return `za_gd_v2|${p}|${m}`;
 }
 
@@ -208,8 +243,7 @@ function saveGottesdienste() {
 function loadGottesdienste() {
   try {
     const raw = localStorage.getItem(currentStorageKey);
-    const arr = raw ? JSON.parse(raw) : [];
-    gottesdienste = Array.isArray(arr) ? arr : [];
+    gottesdienste = raw ? JSON.parse(raw) : [];
   } catch {
     gottesdienste = [];
   }
@@ -217,8 +251,6 @@ function loadGottesdienste() {
 
 function updateListe() {
   const tbody = document.getElementById("gd_liste");
-  if (!tbody) return;
-
   tbody.innerHTML = "";
 
   gottesdienste.forEach((gd, i) => {
@@ -234,48 +266,43 @@ function updateListe() {
     tbody.appendChild(row);
   });
 
-  const hidden = document.getElementById("gottesdienste_json");
-  if (hidden) hidden.value = JSON.stringify(gottesdienste);
+  gottesdienste_json.value = JSON.stringify(gottesdienste);
 }
 
 function addGottesdienst() {
-  const kirchortEl = document.getElementById("gd_kirchort");
-  const datumEl = document.getElementById("gd_datum");
-  const satzEl = document.getElementById("gd_satz");
-  const beginnEl = document.getElementById("gd_beginn");
-  const endeEl = document.getElementById("gd_ende");
+  enforce5MinuteStep(gd_beginn);
+  enforce5MinuteStep(gd_ende);
 
-  if (!kirchortEl || !datumEl || !satzEl || !beginnEl || !endeEl) return;
-
-  enforce5MinuteStep(beginnEl);
-  enforce5MinuteStep(endeEl);
+  // Datum muss zum ausgewählten Monat passen
+  if (!isDateWithinSelectedMonth(gd_datum.value)) {
+    alert("Bitte wähle ein Datum, das im ausgewählten Monat/Jahr liegt.");
+    gd_datum.focus();
+    return;
+  }
 
   const gd = {
-    kirchort: kirchortEl.value.trim(),
-    datum: datumEl.value,
-    satz: satzEl.value,
-    beginn: beginnEl.value,
-    ende: endeEl.value
+    kirchort: gd_kirchort.value.trim(),
+    datum: gd_datum.value,
+    satz: gd_satz.value,
+    beginn: gd_beginn.value,
+    ende: gd_ende.value
   };
 
-  if (Object.values(gd).some((v) => !v)) {
+  if (Object.values(gd).some(v => !v)) {
     alert("Bitte alle Felder ausfüllen.");
     return;
   }
 
   gottesdienste.push(gd);
-
-  // Zeiten pro (Kirchort + Wochentag) merken
   saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende);
-
   saveGottesdienste();
   updateListe();
 
-  kirchortEl.value = "";
-  datumEl.value = "";
-  satzEl.value = "";
-  beginnEl.value = "";
-  endeEl.value = "";
+  gd_kirchort.value = "";
+  gd_datum.value = "";
+  gd_satz.value = "";
+  gd_beginn.value = "";
+  gd_ende.value = "";
 }
 
 function removeGottesdienst(i) {
@@ -287,17 +314,14 @@ function removeGottesdienst(i) {
 function clearGottesdienste() {
   if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
   gottesdienste = [];
-  if (currentStorageKey) localStorage.removeItem(currentStorageKey);
+  localStorage.removeItem(currentStorageKey);
   updateListe();
 }
 
-/* ================= CONTEXT / INIT ================= */
+/* ================= INIT ================= */
 
 function setKirchengemeindeFromSelect() {
-  const input = document.getElementById("kirchengemeinde_input");
-  const select = document.getElementById("kirchengemeinde_select");
-  if (input && select) input.value = select.value;
-
+  kirchengemeinde_input.value = kirchengemeinde_select.value;
   updateOrtSuggestions();
   handleContextChange();
 }
@@ -308,46 +332,50 @@ function handleContextChange() {
 
   if (currentStorageKey) saveGottesdienste();
   currentStorageKey = newKey;
-
   loadGottesdienste();
   updateListe();
+
+  // Datum-Restriktion neu setzen (Monat/Jahr kann sich geändert haben)
+  applyDateRestriction();
 }
 
 function init() {
   populateMonatJahrSelect();
   updateOrtSuggestions();
 
-  // Nach dem Populate (aktueller Monat wird gesetzt): Key sauber initialisieren
+  // nach dem Befüllen des Monat/Jahr-Select direkt Datum-Restriktion setzen
+  applyDateRestriction();
+
   currentStorageKey = getStorageKey();
   loadGottesdienste();
   updateListe();
 
-  // 5-Minuten-Check bei blur
-  ["gd_beginn", "gd_ende"].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("blur", (e) => enforce5MinuteStep(e.target));
+  ["gd_beginn", "gd_ende"].forEach(id => {
+    document.getElementById(id)?.addEventListener("blur", e => enforce5MinuteStep(e.target));
   });
 
-  // Profilfelder speichern
-  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach((id) => {
+  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = loadProfileField(id);
     el.addEventListener("input", () => saveProfileField(id, el.value));
   });
 
-  // Zeiten automatisch vorbelegen
-  const kirchortEl = document.getElementById("gd_kirchort");
-  const datumEl = document.getElementById("gd_datum");
-  if (kirchortEl) kirchortEl.addEventListener("change", applySavedTimesIfAvailable);
-  if (datumEl) datumEl.addEventListener("change", applySavedTimesIfAvailable);
+  // Zeiten-Vorschlag
+  gd_kirchort.addEventListener("change", applySavedTimesIfAvailable);
+  gd_datum.addEventListener("change", () => {
+    applyDateRestriction();        // falls Browser-Datepicker "springen" lässt
+    applySavedTimesIfAvailable();
+  });
 
-  // Kontext wechseln (Pfarrei/Monat)
-  const pfarreiInput = document.getElementById("kirchengemeinde_input");
-  const monatSelect = document.getElementById("monatjahr_input");
+  // Kontextwechsel
+  kirchengemeinde_input.addEventListener("input", handleContextChange);
 
-  if (pfarreiInput) pfarreiInput.addEventListener("input", handleContextChange);
-  if (monatSelect) monatSelect.addEventListener("change", handleContextChange);
+  // Monat/Jahr Wechsel: Restriktion setzen + Kontext wechseln
+  monatjahr_input.addEventListener("change", () => {
+    applyDateRestriction();
+    handleContextChange();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
