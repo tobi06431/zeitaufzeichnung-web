@@ -1,22 +1,29 @@
+import os
 import smtplib
 from email.message import EmailMessage
-import os
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
 
-SMTP_USER = "DEINE_TESTMAIL@gmail.com"
-SMTP_PASSWORD = "APP_PASSWORT_HIER"
+def _get_env(name: str) -> str:
+    value = (os.getenv(name) or "").strip()
+    if not value:
+        raise RuntimeError(f"Fehlende Environment-Variable: {name}")
+    return value
 
 
 def send_pdf_mail(pdf_path: str, recipient: str):
+    smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
+    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+
+    smtp_user = _get_env("SMTP_USER")
+    smtp_password = _get_env("SMTP_PASSWORD")
+
     msg = EmailMessage()
     msg["Subject"] = "Zeitaufzeichnung – Formular"
-    msg["From"] = SMTP_USER
+    msg["From"] = smtp_user
     msg["To"] = recipient
 
     msg.set_content(
-        "Im Anhang befindet sich das ausgefüllte Formular zur Zeitaufzeichnung."
+        "Hallo,\n\nanbei das automatisch erzeugte PDF-Formular.\n\nViele Grüße\nZeitaufzeichnung Web"
     )
 
     with open(pdf_path, "rb") as f:
@@ -29,7 +36,7 @@ def send_pdf_mail(pdf_path: str, recipient: str):
         filename=os.path.basename(pdf_path),
     )
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
         server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.login(smtp_user, smtp_password)
         server.send_message(msg)
