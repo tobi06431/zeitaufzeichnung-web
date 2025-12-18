@@ -1,4 +1,4 @@
-/* ================= ORTSVORSCHLÄGE ================= */
+/* ================= ORTSVORSCHLÃ„GE ================= */
 
 const ORTE_HKK = [
   "St. Georg Dom",
@@ -90,13 +90,12 @@ function populateMonatJahrSelect() {
   }
 }
 
-/* ================= DATUM-RESTRIKTION (nur ausgewählter Monat) ================= */
+/* ================= DATUM-RESTRIKTION (nur ausgewÃ¤hlter Monat) ================= */
 
 function parseMonatJahr(value) {
-  // erwartet "MM/YYYY"
   const m = (value || "").trim().match(/^(\d{2})\/(\d{4})$/);
   if (!m) return null;
-  const month = Number(m[1]); // 1..12
+  const month = Number(m[1]);
   const year = Number(m[2]);
   if (!month || month < 1 || month > 12) return null;
   return { month, year };
@@ -118,19 +117,16 @@ function getMonthBoundsFromSelect() {
 
   const { month, year } = parsed;
 
-  // JS Date: monthIndex 0..11
   const first = new Date(year, month - 1, 1);
-  const last = new Date(year, month, 0); // Tag 0 des Folgemonats = letzter Tag des Monats
+  const last = new Date(year, month, 0);
 
   return {
     min: toISODate(first),
-    max: toISODate(last),
-    year,
-    month
+    max: toISODate(last)
   };
 }
 
-function applyDateRestriction() {
+function applyDateRestrictionSilently() {
   const bounds = getMonthBoundsFromSelect();
   const dateInput = document.getElementById("gd_datum");
   if (!dateInput || !bounds) return;
@@ -138,16 +134,29 @@ function applyDateRestriction() {
   dateInput.min = bounds.min;
   dateInput.max = bounds.max;
 
-  // falls bereits ein Datum drin ist, das nicht passt -> löschen
+  // Wichtig: NICHT alerten â€“ nur still bereinigen, sonst wirkt es "abgewÃ¼rgt"
   if (dateInput.value && (dateInput.value < bounds.min || dateInput.value > bounds.max)) {
     dateInput.value = "";
-    alert("Das Datum muss im ausgewählten Monat/Jahr liegen.");
+  }
+}
+
+function ensureDateStartsInSelectedMonth() {
+  // Wenn Nutzer ins Datumsfeld klickt und es ist leer:
+  // setze den 1. des ausgewÃ¤hlten Monats, damit der Datepicker sofort richtig "startet".
+  const bounds = getMonthBoundsFromSelect();
+  const dateInput = document.getElementById("gd_datum");
+  if (!dateInput || !bounds) return;
+
+  applyDateRestrictionSilently();
+
+  if (!dateInput.value) {
+    dateInput.value = bounds.min; // z.B. 2025-10-01
   }
 }
 
 function isDateWithinSelectedMonth(dateStr) {
   const bounds = getMonthBoundsFromSelect();
-  if (!bounds) return true; // wenn noch nichts gewählt, nicht blockieren
+  if (!bounds) return true;
   if (!dateStr) return false;
   return dateStr >= bounds.min && dateStr <= bounds.max;
 }
@@ -273,9 +282,8 @@ function addGottesdienst() {
   enforce5MinuteStep(gd_beginn);
   enforce5MinuteStep(gd_ende);
 
-  // Datum muss zum ausgewählten Monat passen
   if (!isDateWithinSelectedMonth(gd_datum.value)) {
-    alert("Bitte wähle ein Datum, das im ausgewählten Monat/Jahr liegt.");
+    alert("Bitte wÃ¤hle ein Datum, das im ausgewÃ¤hlten Monat/Jahr liegt.");
     gd_datum.focus();
     return;
   }
@@ -289,7 +297,7 @@ function addGottesdienst() {
   };
 
   if (Object.values(gd).some(v => !v)) {
-    alert("Bitte alle Felder ausfüllen.");
+    alert("Bitte alle Felder ausfÃ¼llen.");
     return;
   }
 
@@ -312,13 +320,13 @@ function removeGottesdienst(i) {
 }
 
 function clearGottesdienste() {
-  if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
+  if (!confirm("Alle Gottesdienste dieser Aufzeichnung lÃ¶schen?")) return;
   gottesdienste = [];
   localStorage.removeItem(currentStorageKey);
   updateListe();
 }
 
-/* ================= INIT ================= */
+/* ================= CONTEXT / INIT ================= */
 
 function setKirchengemeindeFromSelect() {
   kirchengemeinde_input.value = kirchengemeinde_select.value;
@@ -335,20 +343,18 @@ function handleContextChange() {
   loadGottesdienste();
   updateListe();
 
-  // Datum-Restriktion neu setzen (Monat/Jahr kann sich geändert haben)
-  applyDateRestriction();
+  applyDateRestrictionSilently();
 }
 
 function init() {
   populateMonatJahrSelect();
   updateOrtSuggestions();
 
-  // nach dem Befüllen des Monat/Jahr-Select direkt Datum-Restriktion setzen
-  applyDateRestriction();
-
   currentStorageKey = getStorageKey();
   loadGottesdienste();
   updateListe();
+
+  applyDateRestrictionSilently();
 
   ["gd_beginn", "gd_ende"].forEach(id => {
     document.getElementById(id)?.addEventListener("blur", e => enforce5MinuteStep(e.target));
@@ -361,19 +367,25 @@ function init() {
     el.addEventListener("input", () => saveProfileField(id, el.value));
   });
 
-  // Zeiten-Vorschlag
-  gd_kirchort.addEventListener("change", applySavedTimesIfAvailable);
+  // <<<< DAS ist der wichtigste UX-Teil: beim Klick/Fokus Datum automatisch in den richtigen Monat setzen
+  gd_datum.addEventListener("focus", ensureDateStartsInSelectedMonth);
+  gd_datum.addEventListener("click", ensureDateStartsInSelectedMonth);
+
+  // wenn Datum geÃ¤ndert wird: Restriktion bleibt + Zeiten anwenden
   gd_datum.addEventListener("change", () => {
-    applyDateRestriction();        // falls Browser-Datepicker "springen" lässt
+    applyDateRestrictionSilently();
     applySavedTimesIfAvailable();
   });
 
-  // Kontextwechsel
+  gd_kirchort.addEventListener("change", applySavedTimesIfAvailable);
+
   kirchengemeinde_input.addEventListener("input", handleContextChange);
 
-  // Monat/Jahr Wechsel: Restriktion setzen + Kontext wechseln
+  // Monat/Jahr Wechsel: Restriktion neu setzen, Datum ggf. leeren, Kontext wechseln
   monatjahr_input.addEventListener("change", () => {
-    applyDateRestriction();
+    applyDateRestrictionSilently();
+    // Optional: Datum zurÃ¼cksetzen, damit es nicht in falschem Monat bleibt
+    gd_datum.value = "";
     handleContextChange();
   });
 }
