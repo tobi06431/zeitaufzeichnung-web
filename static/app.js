@@ -37,17 +37,23 @@ function loadProfileField(id) {
 /* ================= HILFSFUNKTIONEN ================= */
 
 function normalizeKeyPart(s) {
-  return (s || "").trim().replace(/\s+/g, " ").replace(/[|]/g, "");
+  return (s || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[|]/g, "");
 }
 
 function getSelectedPfarrei() {
-  return normalizeKeyPart(document.getElementById("kirchengemeinde_input").value);
+  const el = document.getElementById("kirchengemeinde_input");
+  return normalizeKeyPart(el ? el.value : "");
 }
 
 function setOrteDatalist(options) {
   const dl = document.getElementById("orte_datalist");
+  if (!dl) return;
+
   dl.innerHTML = "";
-  options.forEach(o => {
+  (options || []).forEach((o) => {
     const opt = document.createElement("option");
     opt.value = o;
     dl.appendChild(opt);
@@ -55,7 +61,8 @@ function setOrteDatalist(options) {
 }
 
 function updateOrtSuggestions() {
-  if (getSelectedPfarrei() === "Heilige Katharina Kaspar Limburger Land") {
+  // Vergleich auf normalisiertem String (robuster)
+  if (getSelectedPfarrei() === normalizeKeyPart("Heilige Katharina Kaspar Limburger Land")) {
     setOrteDatalist(ORTE_HKK);
   } else {
     setOrteDatalist([]);
@@ -98,8 +105,13 @@ function populateMonatJahrSelect() {
 function roundTimeTo5Minutes(t) {
   if (!t) return "";
   let [h, m] = t.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return t;
+
   m = Math.round(m / 5) * 5;
-  if (m === 60) { h = (h + 1) % 24; m = 0; }
+  if (m === 60) {
+    h = (h + 1) % 24;
+    m = 0;
+  }
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
@@ -142,8 +154,18 @@ function buildTimesKey(kirchort, datum) {
 }
 
 function applySavedTimesIfAvailable() {
-  const kirchort = gd_kirchort.value.trim();
-  const datum = gd_datum.value;
+  // Global IDs aus dem HTML sind in Browsern meist als Variablen verfügbar,
+  // aber wir holen sie sicherheitshalber über document.getElementById:
+  const kirchortEl = document.getElementById("gd_kirchort");
+  const datumEl = document.getElementById("gd_datum");
+  const beginnEl = document.getElementById("gd_beginn");
+  const endeEl = document.getElementById("gd_ende");
+
+  if (!kirchortEl || !datumEl || !beginnEl || !endeEl) return;
+
+  const kirchort = kirchortEl.value.trim();
+  const datum = datumEl.value;
+
   const key = buildTimesKey(kirchort, datum);
   if (!key) return;
 
@@ -151,8 +173,9 @@ function applySavedTimesIfAvailable() {
   const saved = map[key];
   if (!saved) return;
 
-  if (!gd_beginn.value) gd_beginn.value = saved.beginn;
-  if (!gd_ende.value) gd_ende.value = saved.ende;
+  // Nur vorbelegen, wenn Feld leer ist (User kann trotzdem überschreiben)
+  if (!beginnEl.value) beginnEl.value = saved.beginn;
+  if (!endeEl.value) endeEl.value = saved.ende;
 }
 
 function saveTimesForEntry(kirchort, datum, beginn, ende) {
@@ -171,7 +194,8 @@ let currentStorageKey = "";
 
 function getStorageKey() {
   const p = getSelectedPfarrei() || "UNBEKANNT_PFARREI";
-  const m = normalizeKeyPart(monatjahr_input.value) || "OHNE_MONAT";
+  const monatEl = document.getElementById("monatjahr_input");
+  const m = normalizeKeyPart(monatEl ? monatEl.value : "") || "OHNE_MONAT";
   return `za_gd_v2|${p}|${m}`;
 }
 
@@ -184,7 +208,8 @@ function saveGottesdienste() {
 function loadGottesdienste() {
   try {
     const raw = localStorage.getItem(currentStorageKey);
-    gottesdienste = raw ? JSON.parse(raw) : [];
+    const arr = raw ? JSON.parse(raw) : [];
+    gottesdienste = Array.isArray(arr) ? arr : [];
   } catch {
     gottesdienste = [];
   }
@@ -192,6 +217,8 @@ function loadGottesdienste() {
 
 function updateListe() {
   const tbody = document.getElementById("gd_liste");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
 
   gottesdienste.forEach((gd, i) => {
@@ -207,36 +234,48 @@ function updateListe() {
     tbody.appendChild(row);
   });
 
-  gottesdienste_json.value = JSON.stringify(gottesdienste);
+  const hidden = document.getElementById("gottesdienste_json");
+  if (hidden) hidden.value = JSON.stringify(gottesdienste);
 }
 
 function addGottesdienst() {
-  enforce5MinuteStep(gd_beginn);
-  enforce5MinuteStep(gd_ende);
+  const kirchortEl = document.getElementById("gd_kirchort");
+  const datumEl = document.getElementById("gd_datum");
+  const satzEl = document.getElementById("gd_satz");
+  const beginnEl = document.getElementById("gd_beginn");
+  const endeEl = document.getElementById("gd_ende");
+
+  if (!kirchortEl || !datumEl || !satzEl || !beginnEl || !endeEl) return;
+
+  enforce5MinuteStep(beginnEl);
+  enforce5MinuteStep(endeEl);
 
   const gd = {
-    kirchort: gd_kirchort.value.trim(),
-    datum: gd_datum.value,
-    satz: gd_satz.value,
-    beginn: gd_beginn.value,
-    ende: gd_ende.value
+    kirchort: kirchortEl.value.trim(),
+    datum: datumEl.value,
+    satz: satzEl.value,
+    beginn: beginnEl.value,
+    ende: endeEl.value
   };
 
-  if (Object.values(gd).some(v => !v)) {
+  if (Object.values(gd).some((v) => !v)) {
     alert("Bitte alle Felder ausfüllen.");
     return;
   }
 
   gottesdienste.push(gd);
+
+  // Zeiten pro (Kirchort + Wochentag) merken
   saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende);
+
   saveGottesdienste();
   updateListe();
 
-  gd_kirchort.value = "";
-  gd_datum.value = "";
-  gd_satz.value = "";
-  gd_beginn.value = "";
-  gd_ende.value = "";
+  kirchortEl.value = "";
+  datumEl.value = "";
+  satzEl.value = "";
+  beginnEl.value = "";
+  endeEl.value = "";
 }
 
 function removeGottesdienst(i) {
@@ -248,14 +287,17 @@ function removeGottesdienst(i) {
 function clearGottesdienste() {
   if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
   gottesdienste = [];
-  localStorage.removeItem(currentStorageKey);
+  if (currentStorageKey) localStorage.removeItem(currentStorageKey);
   updateListe();
 }
 
-/* ================= INIT ================= */
+/* ================= CONTEXT / INIT ================= */
 
 function setKirchengemeindeFromSelect() {
-  kirchengemeinde_input.value = kirchengemeinde_select.value;
+  const input = document.getElementById("kirchengemeinde_input");
+  const select = document.getElementById("kirchengemeinde_select");
+  if (input && select) input.value = select.value;
+
   updateOrtSuggestions();
   handleContextChange();
 }
@@ -266,6 +308,7 @@ function handleContextChange() {
 
   if (currentStorageKey) saveGottesdienste();
   currentStorageKey = newKey;
+
   loadGottesdienste();
   updateListe();
 }
@@ -274,26 +317,37 @@ function init() {
   populateMonatJahrSelect();
   updateOrtSuggestions();
 
+  // Nach dem Populate (aktueller Monat wird gesetzt): Key sauber initialisieren
   currentStorageKey = getStorageKey();
   loadGottesdienste();
   updateListe();
 
-  ["gd_beginn", "gd_ende"].forEach(id => {
-    document.getElementById(id)?.addEventListener("blur", e => enforce5MinuteStep(e.target));
+  // 5-Minuten-Check bei blur
+  ["gd_beginn", "gd_ende"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("blur", (e) => enforce5MinuteStep(e.target));
   });
 
-  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach(id => {
+  // Profilfelder speichern
+  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = loadProfileField(id);
     el.addEventListener("input", () => saveProfileField(id, el.value));
   });
 
-  gd_kirchort.addEventListener("change", applySavedTimesIfAvailable);
-  gd_datum.addEventListener("change", applySavedTimesIfAvailable);
+  // Zeiten automatisch vorbelegen
+  const kirchortEl = document.getElementById("gd_kirchort");
+  const datumEl = document.getElementById("gd_datum");
+  if (kirchortEl) kirchortEl.addEventListener("change", applySavedTimesIfAvailable);
+  if (datumEl) datumEl.addEventListener("change", applySavedTimesIfAvailable);
 
-  kirchengemeinde_input.addEventListener("input", handleContextChange);
-  monatjahr_input.addEventListener("change", handleContextChange);
+  // Kontext wechseln (Pfarrei/Monat)
+  const pfarreiInput = document.getElementById("kirchengemeinde_input");
+  const monatSelect = document.getElementById("monatjahr_input");
+
+  if (pfarreiInput) pfarreiInput.addEventListener("input", handleContextChange);
+  if (monatSelect) monatSelect.addEventListener("change", handleContextChange);
 }
 
 document.addEventListener("DOMContentLoaded", init);
