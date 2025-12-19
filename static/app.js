@@ -265,6 +265,30 @@ function loadGottesdienste() {
 function updateListe() {
   const tbody = document.getElementById("gd_liste");
   tbody.innerHTML = "";
+  // Liste sortieren: zuerst nach Datum (aufsteigend), dann nach Beginn (aufsteigend)
+  gottesdienste.sort((a, b) => {
+    const ad = a.datum || "";
+    const bd = b.datum || "";
+    if (ad && bd) {
+      if (ad !== bd) return ad < bd ? -1 : 1;
+    } else if (ad) {
+      return -1;
+    } else if (bd) {
+      return 1;
+    }
+
+    const ab = a.beginn || "";
+    const bb = b.beginn || "";
+    if (ab && bb) {
+      if (ab !== bb) return ab < bb ? -1 : 1;
+    } else if (ab) {
+      return -1;
+    } else if (bb) {
+      return 1;
+    }
+
+    return 0;
+  });
 
   gottesdienste.forEach((gd, i) => {
     const row = document.createElement("tr");
@@ -279,6 +303,7 @@ function updateListe() {
     tbody.appendChild(row);
   });
 
+  // Hidden field mit der sortierten Liste füllen
   gottesdienste_json.value = JSON.stringify(gottesdienste);
 }
 
