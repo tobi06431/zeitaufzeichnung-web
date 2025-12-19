@@ -302,3 +302,17 @@ tbody tr.weekend{
 }
 
 
+/* Responsive table wrapper to avoid overflow on small screens */
+.table-wrap{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 12px;
+}
+
+/* Allow table contents to wrap where sensible */
+td, th{ word-break: keep-all; }
+@media (max-width: 480px){
+  td, th{ font-size: 13px; }
+}
+
+
