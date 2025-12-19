@@ -203,6 +203,49 @@ function saveTimesMap(map) {
   localStorage.setItem(getTimesStorageKey(), JSON.stringify(map));
 }
 
+/* ================= PANEL STATE (Einklappbare Abschnitte) ================= */
+
+function loadPanelState() {
+  try {
+    const raw = localStorage.getItem("za_panels_v1");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePanelState(state) {
+  try { localStorage.setItem("za_panels_v1", JSON.stringify(state)); } catch {}
+}
+
+function initPanels() {
+  const state = loadPanelState();
+  document.querySelectorAll('.panel').forEach(panel => {
+    const id = panel.dataset.panelId || '';
+    const btn = panel.querySelector('.panel__toggle');
+    if (!btn) return;
+
+    const collapsed = !!state[id];
+    if (collapsed) {
+      panel.classList.add('collapsed');
+      btn.textContent = '►';
+      btn.setAttribute('aria-expanded', 'false');
+    } else {
+      btn.textContent = '▼';
+      btn.setAttribute('aria-expanded', 'true');
+    }
+
+    btn.addEventListener('click', () => {
+      panel.classList.toggle('collapsed');
+      const nowCollapsed = panel.classList.contains('collapsed');
+      btn.textContent = nowCollapsed ? '►' : '▼';
+      btn.setAttribute('aria-expanded', (!nowCollapsed).toString());
+      state[id] = nowCollapsed;
+      savePanelState(state);
+    });
+  });
+}
+
 function buildTimesKey(kirchort, datum) {
   const k = normalizeKeyPart(kirchort);
   const w = getWeekdayKey(datum);
@@ -399,6 +442,9 @@ function handleContextChange() {
 function init() {
   populateMonatJahrSelect();
   updateOrtSuggestions();
+
+  // Panels: einklappbare Abschnitte initialisieren
+  initPanels();
 
   currentStorageKey = getStorageKey();
   loadGottesdienste();
