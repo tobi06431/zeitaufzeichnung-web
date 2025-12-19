@@ -23,6 +23,16 @@ function init() {
     el.addEventListener("input", () => window.saveProfileField && window.saveProfileField(id, el.value));
   });
 
+  // ensure `taetigkeit_input` remains editable after choosing from datalist
+  const taet = document.getElementById('taetigkeit_input');
+  if (taet) {
+    // remove accidental readonly/disabled and add safe listeners
+    taet.removeAttribute('readonly');
+    taet.removeAttribute('disabled');
+    taet.addEventListener('change', () => { window.saveProfileField && window.saveProfileField('taetigkeit_input', taet.value); });
+    taet.addEventListener('focus', () => { /* noop: keep focus behavior native */ });
+  }
+
   // kirchengemeinde load + listener
   const kirchEl = document.getElementById('kirchengemeinde_input');
   if (kirchEl) {
