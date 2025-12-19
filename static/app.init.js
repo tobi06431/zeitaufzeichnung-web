@@ -50,6 +50,26 @@ function init() {
     ensureOptions();
   })();
 
+  // button to show taetigkeit suggestions (clears value temporarily to show full list)
+  const taetShowBtn = document.getElementById('taetigkeit_show_btn');
+  if (taetShowBtn) {
+    taetShowBtn.addEventListener('click', (e) => {
+      const taet = document.getElementById('taetigkeit_input');
+      if (!taet) return;
+      const prev = taet.value;
+      taet.value = '';
+      taet.focus();
+
+      // If user leaves the field without changing, restore previous value
+      const onBlur = () => {
+        if (!taet.value) taet.value = prev;
+        taet.removeEventListener('blur', onBlur);
+      };
+
+      taet.addEventListener('blur', onBlur);
+    });
+  }
+
   // kirchengemeinde load + listener
   const kirchEl = document.getElementById('kirchengemeinde_input');
   if (kirchEl) {

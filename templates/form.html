@@ -120,11 +120,15 @@
           </div>
 
           <label>Tätigkeit
-            <input
-              name="Tätigkeit"
-              id="taetigkeit_input"
-              list="taetigkeit_datalist"
-              placeholder="z.B. Organist">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input
+                name="Tätigkeit"
+                id="taetigkeit_input"
+                list="taetigkeit_datalist"
+                placeholder="z.B. Organist"
+                style="flex:1;">
+              <button type="button" id="taetigkeit_show_btn" class="btn btn-secondary" style="padding:6px 8px;">↕</button>
+            </div>
           </label>
 
           <datalist id="taetigkeit_datalist">
