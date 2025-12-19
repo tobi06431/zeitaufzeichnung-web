@@ -362,7 +362,7 @@ function init() {
     document.getElementById(id)?.addEventListener("blur", e => enforce5MinuteStep(e.target));
   });
 
-  ["vorname_input", "nachname_input", "geburtsdatum_input"].forEach(id => {
+  ["vorname_input", "nachname_input", "geburtsdatum_input", "taetigkeit_input"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = loadProfileField(id);
