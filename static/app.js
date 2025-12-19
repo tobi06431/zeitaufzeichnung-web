@@ -219,16 +219,20 @@ function applySavedTimesIfAvailable() {
   const saved = map[key];
   if (!saved) return;
 
-  if (!gd_beginn.value) gd_beginn.value = saved.beginn;
-  if (!gd_ende.value) gd_ende.value = saved.ende;
+  // Zeiten wie bisher, nur setzen wenn Feld leer
+  if (!gd_beginn.value && saved.beginn) gd_beginn.value = saved.beginn;
+  if (!gd_ende.value && saved.ende) gd_ende.value = saved.ende;
+  // Neuer: auch Besoldungssatz automatisch einsetzen, falls vorhanden
+  if (!gd_satz.value && saved.satz) gd_satz.value = saved.satz;
 }
 
-function saveTimesForEntry(kirchort, datum, beginn, ende) {
+function saveTimesForEntry(kirchort, datum, beginn, ende, satz) {
   const key = buildTimesKey(kirchort, datum);
   if (!key) return;
 
   const map = loadTimesMap();
-  map[key] = { beginn, ende };
+  // speichere beginn/ende und optional den besoldungssatz
+  map[key] = { beginn, ende, satz };
   saveTimesMap(map);
 }
 
@@ -302,7 +306,7 @@ function addGottesdienst() {
   }
 
   gottesdienste.push(gd);
-  saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende);
+  saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende, gd.satz);
   saveGottesdienste();
   updateListe();
 
