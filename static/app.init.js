@@ -25,27 +25,57 @@ function init() {
 
   // Ensure `taetigkeit_datalist` suggestions exist and keep `taetigkeit_input` editable
   (function(){
-    const taet = document.getElementById('taetigkeit_input');
-    const dl = document.getElementById('taetigkeit_datalist');
-    const OPTIONS = ['Organist','Chorleiter','Küster'];
+    // New approach: use select + custom input; keep hidden #taetigkeit_input as form field
+    const hidden = document.getElementById('taetigkeit_input');
+    const select = document.getElementById('taetigkeit_select');
+    const custom = document.getElementById('taetigkeit_custom');
 
-    function ensureOptions(){
-      if (!dl) return;
-      if (dl.children.length === 0) {
-        OPTIONS.forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v;
-          dl.appendChild(opt);
-        });
+    function setHidden(val){
+      if (!hidden) return;
+      hidden.value = val || '';
+      window.saveProfileField && window.saveProfileField('taetigkeit_input', hidden.value);
+    }
+
+    if (select && hidden) {
+      // initialize: load saved value and reflect in select/custom
+      const saved = window.loadProfileField ? window.loadProfileField('taetigkeit_input') : '';
+      if (saved) {
+        const opt = Array.from(select.options).find(o => o.value === saved);
+        if (opt) {
+          select.value = saved;
+          custom.style.display = 'none';
+        } else {
+          select.value = '__OTHER__';
+          custom.style.display = '';
+          custom.value = saved;
+        }
+        hidden.value = saved;
       }
+
+      select.addEventListener('change', () => {
+        if (select.value === '__OTHER__') {
+          custom.style.display = '';
+          custom.focus();
+          setHidden(custom.value || '');
+        } else {
+          custom.style.display = 'none';
+          custom.value = '';
+          setHidden(select.value);
+        }
+      });
     }
 
-    if (taet) {
-      if (taet.removeAttribute) { taet.removeAttribute('readonly'); taet.removeAttribute('disabled'); }
-      taet.addEventListener('change', () => { window.saveProfileField && window.saveProfileField('taetigkeit_input', taet.value); });
-      taet.addEventListener('focus', ensureOptions);
+    if (custom && hidden) {
+      custom.addEventListener('input', () => setHidden(custom.value));
+      custom.addEventListener('blur', () => {
+        if (custom.value) {
+          // keep select on Other
+          select.value = '__OTHER__';
+          setHidden(custom.value);
+        }
+      });
     }
-
+  })();
     // populate on init
     ensureOptions();
   })();

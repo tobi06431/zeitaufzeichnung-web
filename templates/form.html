@@ -121,21 +121,19 @@
 
           <label>Tätigkeit
             <div style="display:flex; gap:8px; align-items:center;">
-              <input
-                name="Tätigkeit"
-                id="taetigkeit_input"
-                list="taetigkeit_datalist"
-                placeholder="z.B. Organist"
-                style="flex:1;">
-              <button type="button" id="taetigkeit_show_btn" class="btn btn-secondary" style="padding:6px 8px;">↕</button>
+              <select id="taetigkeit_select" aria-label="Tätigkeit auswählen">
+                <option value="">— auswählen —</option>
+                <option value="Organist">Organist</option>
+                <option value="Chorleiter">Chorleiter</option>
+                <option value="Küster">Küster</option>
+                <option value="__OTHER__">Andere...</option>
+              </select>
+
+              <input id="taetigkeit_custom" placeholder="Andere Tätigkeit" style="display:none; flex:1;">
+
+              <input type="hidden" name="Tätigkeit" id="taetigkeit_input">
             </div>
           </label>
-
-          <datalist id="taetigkeit_datalist">
-            <option value="Organist"></option>
-            <option value="Chorleiter"></option>
-            <option value="Küster"></option>
-          </datalist>
 
         </div>
       </div>
