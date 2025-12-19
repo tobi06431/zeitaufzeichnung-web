@@ -331,6 +331,8 @@ function clearGottesdienste() {
 function setKirchengemeindeFromSelect() {
   kirchengemeinde_input.value = kirchengemeinde_select.value;
   updateOrtSuggestions();
+  // Auswahl aus Select sofort speichern und Kontext aktualisieren
+  saveProfileField("kirchengemeinde_input", kirchengemeinde_input.value);
   handleContextChange();
 }
 
@@ -366,6 +368,21 @@ function init() {
     el.value = loadProfileField(id);
     el.addEventListener("input", () => saveProfileField(id, el.value));
   });
+
+  // Kath. Kirchengemeinde ebenfalls dauerhaft speichern (letzte Auswahl)
+  {
+    const id = "kirchengemeinde_input";
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = loadProfileField(id);
+      el.addEventListener("input", () => saveProfileField(id, el.value));
+      // wenn beim Start bereits ein Wert vorhanden ist, kontext anpassen
+      if (el.value) {
+        updateOrtSuggestions();
+        handleContextChange();
+      }
+    }
+  }
 
   // <<<< DAS ist der wichtigste UX-Teil: beim Klick/Fokus Datum automatisch in den richtigen Monat setzen
   gd_datum.addEventListener("focus", ensureDateStartsInSelectedMonth);
