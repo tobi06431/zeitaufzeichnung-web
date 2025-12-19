@@ -177,6 +177,30 @@ tbody tr:nth-child(even){
   background:#fafafa;
 }
 
+/* Hover-Effekt für Zeilen */
+tbody tr:hover{
+  background: rgba(37,99,235,0.04);
+}
+
+/* Wochenend-Hervorhebung */
+tbody tr.weekend{
+  background: #fff9f0;
+}
+
+/* Besoldungssatz Badges */
+.badge{
+  display:inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight:700;
+  color: #111827;
+}
+.badge--low{ background: #e6eef8; color: #0f172a; }
+.badge--mid{ background: #fff7e6; color: #92400e; }
+.badge--high{ background: #e6f9ef; color: #065f46; }
+.badge--none{ background: #f3f4f6; color: #6b7280; }
+
 
 .flash {
   margin: 12px 0 16px 0;

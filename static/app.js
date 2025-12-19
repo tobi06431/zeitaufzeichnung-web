@@ -292,10 +292,29 @@ function updateListe() {
 
   gottesdienste.forEach((gd, i) => {
     const row = document.createElement("tr");
+
+    // Wochenend-Highlight
+    try {
+      const dt = new Date((gd.datum || "") + "T00:00:00");
+      const day = dt.getDay(); // 0=So,6=Sa
+      if (day === 0 || day === 6) row.classList.add("weekend");
+    } catch (e) {}
+
+    // Badge für Besoldungssatz
+    const satzNum = parseFloat((gd.satz || "").toString().replace(',', '.'));
+    let badgeClass = "badge--none";
+    if (!isNaN(satzNum)) {
+      if (satzNum <= 1.5) badgeClass = "badge--low";
+      else if (satzNum <= 3) badgeClass = "badge--mid";
+      else badgeClass = "badge--high";
+    }
+
+    const satzHtml = `<span class="badge ${badgeClass}">${gd.satz || "–"}</span>`;
+
     row.innerHTML = `
       <td>${gd.kirchort}</td>
       <td>${gd.datum}</td>
-      <td>${gd.satz}</td>
+      <td>${satzHtml}</td>
       <td>${gd.beginn}</td>
       <td>${gd.ende}</td>
       <td><button type="button" onclick="removeGottesdienst(${i})">X</button></td>
