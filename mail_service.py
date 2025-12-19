@@ -10,7 +10,7 @@ def _get_env(name: str) -> str:
     return value
 
 
-def send_pdf_mail(pdf_path: str, recipient: str):
+def send_pdf_mail(pdf_path: str, recipient: str, filename: str = None):
     smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
     smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
 
@@ -29,11 +29,13 @@ def send_pdf_mail(pdf_path: str, recipient: str):
     with open(pdf_path, "rb") as f:
         pdf_data = f.read()
 
+    attach_name = filename or os.path.basename(pdf_path)
+
     msg.add_attachment(
         pdf_data,
         maintype="application",
         subtype="pdf",
-        filename=os.path.basename(pdf_path),
+        filename=attach_name,
     )
 
     with smtplib.SMTP(smtp_host, smtp_port) as server:
