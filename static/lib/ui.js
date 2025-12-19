@@ -34,8 +34,13 @@ function setOrteDatalist(options) {
 }
 
 function updateOrtSuggestions() {
-  if (getSelectedPfarrei() === "Heilige Katharina Kaspar Limburger Land") {
+  const p = getSelectedPfarrei();
+  if (p === "Heilige Katharina Kaspar Limburger Land") {
     setOrteDatalist(ORTE_HKK);
+  } else if (p === "St. Peter und Paul Bad Camberg") {
+    setOrteDatalist(["St. Petrus Eisenbach", "St. Christophorus Niederselters"]);
+  } else if (p.includes("Heilig Geist") || p === "Heilig Geist Niederbrechen" || p === "Heilig Geist Goldener Grund") {
+    setOrteDatalist(["St. Maximin Niederbrechen", "St. Peter und Paul Villmar"]);
   } else {
     setOrteDatalist([]);
   }
