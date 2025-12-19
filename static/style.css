@@ -169,6 +169,7 @@ input:focus, select:focus{
   background: linear-gradient(180deg, rgba(0,0,0,0.02), transparent);
   border-bottom: 1px solid var(--border);
 }
+.panel__header{ cursor: pointer; }
 .panel__title{ font-weight: 700; }
 .panel__toggle{
   background: transparent;

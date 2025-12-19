@@ -235,14 +235,27 @@ function initPanels() {
       btn.setAttribute('aria-expanded', 'true');
     }
 
-    btn.addEventListener('click', () => {
+    function toggle() {
       panel.classList.toggle('collapsed');
       const nowCollapsed = panel.classList.contains('collapsed');
       btn.textContent = nowCollapsed ? '►' : '▼';
       btn.setAttribute('aria-expanded', (!nowCollapsed).toString());
       state[id] = nowCollapsed;
       savePanelState(state);
-    });
+    }
+
+    // Toggle on button click
+    btn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+
+    // Also toggle when clicking the whole header (better desktop UX)
+    const header = panel.querySelector('.panel__header');
+    if (header) {
+      header.addEventListener('click', (e) => {
+        // if the click was on the actual toggle button, ignore because btn handler ran
+        if (e.target.closest('.panel__toggle')) return;
+        toggle();
+      });
+    }
   });
 }
 
