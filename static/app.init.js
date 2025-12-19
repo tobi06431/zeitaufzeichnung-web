@@ -28,7 +28,8 @@ function init() {
   const kirchEl = document.getElementById('kirchengemeinde_input');
   if (kirchEl) {
     kirchEl.value = window.loadProfileField ? window.loadProfileField('kirchengemeinde_input') : kirchEl.value;
-    kirchEl.addEventListener('input', () => {
+    const kev = (kirchEl.tagName && kirchEl.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+    kirchEl.addEventListener(kev, () => {
       window.saveProfileField && window.saveProfileField('kirchengemeinde_input', kirchEl.value);
       window.handleContextChange && window.handleContextChange();
     });
@@ -49,15 +50,7 @@ function init() {
   const gd_kirchort = document.getElementById('gd_kirchort');
   if (gd_kirchort) gd_kirchort.addEventListener('change', () => window.applySavedTimesIfAvailable && window.applySavedTimesIfAvailable());
 
-  const kirchengemeinde_select = document.getElementById('kirchengemeinde_select');
-  if (kirchengemeinde_select) kirchengemeinde_select.addEventListener('change', () => {
-    const kir = document.getElementById('kirchengemeinde_input');
-    if (kir) {
-      kir.value = kirchengemeinde_select.value;
-      window.saveProfileField && window.saveProfileField('kirchengemeinde_input', kir.value);
-      window.handleContextChange && window.handleContextChange();
-    }
-  });
+  // (legacy secondary select removed) No extra listener required here.
 
   const monatjahr_input = document.getElementById('monatjahr_input');
   if (monatjahr_input) monatjahr_input.addEventListener('change', () => {

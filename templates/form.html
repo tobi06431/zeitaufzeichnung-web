@@ -38,25 +38,11 @@
         <div class="panel__content">
 
           <label>Kath. Kirchengemeinde</label>
-          <input
-            type="text"
-            name="Kath. Kirchengemeinde"
-            id="kirchengemeinde_input"
-            placeholder="z.B. Heilige Katharina Kaspar Limbburger Land">
-
-          <select
-            id="kirchengemeinde_select"
-            onchange="setKirchengemeindeFromSelect()">
-            <option value="">Vorschlag auswählen …</option>
-            <option value="Heilige Katharina Kaspar Limburger Land">
-              Heilige Katharina Kaspar Limburger Land
-            </option>
-            <option value="St. Peter und Paul Bad Camberg">
-              St. Peter und Paul Bad Camberg
-            </option>
-            <option value="Heilig Geist Goldener Grund">
-              Heilig Geist Goldener Grund
-            </option>
+          <select name="Kath. Kirchengemeinde" id="kirchengemeinde_input">
+            <option value="">-- auswählen --</option>
+            <option value="Heilige Katharina Kaspar Limburger Land">Heilige Katharina Kaspar Limburger Land</option>
+            <option value="St. Peter und Paul Bad Camberg">St. Peter und Paul Bad Camberg</option>
+            <option value="Heilig Geist Goldener Grund">Heilig Geist Goldener Grund</option>
           </select>
 
         </div>
