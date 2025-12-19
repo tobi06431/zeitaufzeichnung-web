@@ -23,6 +23,33 @@ function init() {
     el.addEventListener("input", () => window.saveProfileField && window.saveProfileField(id, el.value));
   });
 
+  // Ensure `taetigkeit_datalist` suggestions exist and keep `taetigkeit_input` editable
+  (function(){
+    const taet = document.getElementById('taetigkeit_input');
+    const dl = document.getElementById('taetigkeit_datalist');
+    const OPTIONS = ['Organist','Chorleiter','Küster'];
+
+    function ensureOptions(){
+      if (!dl) return;
+      if (dl.children.length === 0) {
+        OPTIONS.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v;
+          dl.appendChild(opt);
+        });
+      }
+    }
+
+    if (taet) {
+      if (taet.removeAttribute) { taet.removeAttribute('readonly'); taet.removeAttribute('disabled'); }
+      taet.addEventListener('change', () => { window.saveProfileField && window.saveProfileField('taetigkeit_input', taet.value); });
+      taet.addEventListener('focus', ensureOptions);
+    }
+
+    // populate on init
+    ensureOptions();
+  })();
+
   // kirchengemeinde load + listener
   const kirchEl = document.getElementById('kirchengemeinde_input');
   if (kirchEl) {
