@@ -120,18 +120,13 @@
           </div>
 
           <label>Tätigkeit
-            <input
-              name="Tätigkeit"
-              id="taetigkeit_input"
-              list="taetigkeit_datalist"
-              placeholder="z.B. Organist">
+            <select name="Tätigkeit" id="taetigkeit_input">
+              <option value="">-- auswählen --</option>
+              <option value="Organist">Organist</option>
+              <option value="Chorleiter">Chorleiter</option>
+              <option value="Küster">Küster</option>
+            </select>
           </label>
-
-          <datalist id="taetigkeit_datalist">
-            <option value="Organist"></option>
-            <option value="Chorleiter"></option>
-            <option value="Küster"></option>
-          </datalist>
 
         </div>
       </div>

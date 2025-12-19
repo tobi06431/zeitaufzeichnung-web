@@ -20,7 +20,8 @@ function init() {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = window.loadProfileField ? window.loadProfileField(id) : el.value;
-    el.addEventListener("input", () => window.saveProfileField && window.saveProfileField(id, el.value));
+    const ev = (el.tagName && el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+    el.addEventListener(ev, () => window.saveProfileField && window.saveProfileField(id, el.value));
   });
 
   // kirchengemeinde load + listener
