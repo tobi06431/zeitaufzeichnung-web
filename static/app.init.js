@@ -31,6 +31,7 @@ function init() {
     const kev = (kirchEl.tagName && kirchEl.tagName.toLowerCase() === 'select') ? 'change' : 'input';
     kirchEl.addEventListener(kev, () => {
       window.saveProfileField && window.saveProfileField('kirchengemeinde_input', kirchEl.value);
+      window.updateOrtSuggestions && window.updateOrtSuggestions();
       window.handleContextChange && window.handleContextChange();
     });
     if (kirchEl.value) {
