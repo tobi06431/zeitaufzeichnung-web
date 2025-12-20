@@ -119,36 +119,44 @@
 
       <!-- ================= MEHRARBEIT ================= -->
 
-      <h3>Mehrarbeit</h3>
+      <div class="panel" data-panel-id="mehrarbeit">
+        <div class="panel__header">
+          <div class="panel__title">Mehrarbeit</div>
+          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
+        </div>
+        <div class="panel__content">
 
-      <div class="grid">
-        <label>Beschäftigungsumfang
-          <input name="Beschäftigungsumfang">
-        </label>
+          <div class="grid">
+            <label>Beschäftigungsumfang
+              <input name="Beschäftigungsumfang">
+            </label>
 
-        <label>Mehrarbeit Stunden
-          <input name="Mehrarbeit Stunden">
-        </label>
+            <label>Mehrarbeit Stunden
+              <input name="Mehrarbeit Stunden">
+            </label>
+          </div>
+
+          <label>Mehrarbeit (Textfeld)
+            <input name="Mehrarbeit (Textfeld)">
+          </label>
+
+          <label>Datum</label>
+          <div class="row">
+            <input id="datum" name="Datum">
+            <button type="button" class="btn btn-secondary"
+              onclick="document.getElementById('datum').value='{{ today }}'">
+              Heute
+            </button>
+          </div>
+
+          <label>Mehrarbeitsstunden auszahlen</label>
+          <select name="Mehrarbeit_auszahlen">
+            <option value="Nein" selected>Nein</option>
+            <option value="Ja">Ja</option>
+          </select>
+
+        </div>
       </div>
-
-      <label>Mehrarbeit (Textfeld)
-        <input name="Mehrarbeit (Textfeld)">
-      </label>
-
-      <label>Datum</label>
-      <div class="row">
-        <input id="datum" name="Datum">
-        <button type="button" class="btn btn-secondary"
-          onclick="document.getElementById('datum').value='{{ today }}'">
-          Heute
-        </button>
-      </div>
-
-      <label>Mehrarbeitsstunden auszahlen</label>
-      <select name="Mehrarbeit_auszahlen">
-        <option value="Nein" selected>Nein</option>
-        <option value="Ja">Ja</option>
-      </select>
 
       <hr class="sep">
 
