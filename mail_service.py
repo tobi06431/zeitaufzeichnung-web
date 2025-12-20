@@ -42,3 +42,37 @@ def send_pdf_mail(pdf_path: str, recipient: str, filename: str = None):
         server.starttls()
         server.login(smtp_user, smtp_password)
         server.send_message(msg)
+
+
+def send_csv_mail(csv_path: str, recipient: str, filename: str = None):
+    smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
+    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+
+    smtp_user = _get_env("SMTP_USER")
+    smtp_password = _get_env("SMTP_PASSWORD")
+
+    msg = EmailMessage()
+    msg["Subject"] = "Zeitaufzeichnung – CSV Daten"
+    msg["From"] = smtp_user
+    msg["To"] = recipient
+
+    msg.set_content(
+        "Hallo,\n\nanbei die Zeitaufzeichnungsdaten als CSV-Datei.\n\nViele Grüße\nZeitaufzeichnung Web"
+    )
+
+    with open(csv_path, "rb") as f:
+        csv_data = f.read()
+
+    attach_name = filename or os.path.basename(csv_path)
+
+    msg.add_attachment(
+        csv_data,
+        maintype="text",
+        subtype="csv",
+        filename=attach_name,
+    )
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
