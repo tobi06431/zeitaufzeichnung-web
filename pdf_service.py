@@ -206,12 +206,19 @@ def create_pdf(form_data: dict, output_path: str):
     # >>> Basierend auf Tätigkeit entweder Gottesdienste oder Arbeitszeiten verwenden
     taetigkeit = (form_data.get("Tätigkeit") or "").strip()
     
+    # Debug: Tätigkeit ausgeben (kann später entfernt werden)
+    print(f"DEBUG: Tätigkeit = '{taetigkeit}'")
+    
     if taetigkeit == "Organist":
         # Nur Gottesdienste für Organisten
+        print("DEBUG: Verwende Gottesdienste")
         werte_pdf = apply_gottesdienste_to_pdf_fields(werte_pdf, form_data.get("Gottesdienste", "[]"))
-    else:
-        # Arbeitszeiten für alle anderen Tätigkeiten
+    elif taetigkeit and taetigkeit != "":
+        # Arbeitszeiten für alle anderen Tätigkeiten (aber nicht wenn Tätigkeit leer ist)
+        print("DEBUG: Verwende Arbeitszeiten")
         werte_pdf = apply_arbeitszeiten_to_pdf_fields(werte_pdf, form_data.get("Arbeitszeiten", "[]"))
+    else:
+        print("DEBUG: Keine Tätigkeit ausgewählt - weder Gottesdienste noch Arbeitszeiten")
 
     # In alle Seiten schreiben (pypdf setzt pro Seite nur die Felder, die dort existieren)
     for page in writer.pages:
