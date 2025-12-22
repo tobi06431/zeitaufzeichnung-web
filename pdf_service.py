@@ -139,6 +139,44 @@ def apply_gottesdienste_to_pdf_fields(fields: dict, gottesdienste_json: str) -> 
     return fields
 
 
+def apply_arbeitszeiten_to_pdf_fields(fields: dict, arbeitszeiten_json: str) -> dict:
+    """
+    fields: dict, das an pypdf übergeben wird (PDF-Feldname -> Wert)
+    arbeitszeiten_json: JSON-String aus request.form["Arbeitszeiten"]
+    """
+    try:
+        arbeitszeiten = json.loads(arbeitszeiten_json or "[]")
+        if not isinstance(arbeitszeiten, list):
+            return fields
+    except Exception:
+        return fields
+
+    for az in arbeitszeiten:
+        try:
+            datum = (az.get("datum") or "").strip()
+            # datum kommt aus <input type="date"> als "YYYY-MM-DD"
+            day = datetime.strptime(datum, "%Y-%m-%d").day
+
+            beginn = (az.get("beginn") or "").strip()
+            ende = (az.get("ende") or "").strip()
+
+            if day not in DAY_TO_FIELDS:
+                continue
+
+            f_kirchort, f_beginn, f_ende = DAY_TO_FIELDS[day]
+
+            # Bei Arbeitszeiten lassen wir das Kirchort-Feld leer oder könnten einen Platzhalter einfügen
+            # fields[f_kirchort] bleibt leer
+            fields[f_beginn] = _safe_join(fields.get(f_beginn, ""), beginn)
+            fields[f_ende]   = _safe_join(fields.get(f_ende, ""), ende)
+
+        except Exception:
+            # Ein kaputter Eintrag soll das PDF nicht verhindern
+            continue
+
+    return fields
+
+
 def create_pdf(form_data: dict, output_path: str):
     """
     form_data: dict mit Keys wie im HTML-Form (z.B. 'Nachname', 'GKZ', ...)
@@ -165,8 +203,15 @@ def create_pdf(form_data: dict, output_path: str):
     werte_pdf["Markierfeld 1"] = CHECK_ON_VALUE if auszahlung == "Ja" else CHECK_OFF_VALUE
     werte_pdf["Markierfeld 1_2"] = CHECK_ON_VALUE if auszahlung == "Nein" else CHECK_OFF_VALUE
 
-    # >>> NEU: Gottesdienste in die passenden Tagesfelder schreiben
-    werte_pdf = apply_gottesdienste_to_pdf_fields(werte_pdf, form_data.get("Gottesdienste", "[]"))
+    # >>> Basierend auf Tätigkeit entweder Gottesdienste oder Arbeitszeiten verwenden
+    taetigkeit = (form_data.get("Tätigkeit") or "").strip()
+    
+    if taetigkeit == "Organist":
+        # Nur Gottesdienste für Organisten
+        werte_pdf = apply_gottesdienste_to_pdf_fields(werte_pdf, form_data.get("Gottesdienste", "[]"))
+    else:
+        # Arbeitszeiten für alle anderen Tätigkeiten
+        werte_pdf = apply_arbeitszeiten_to_pdf_fields(werte_pdf, form_data.get("Arbeitszeiten", "[]"))
 
     # In alle Seiten schreiben (pypdf setzt pro Seite nur die Felder, die dort existieren)
     for page in writer.pages:
