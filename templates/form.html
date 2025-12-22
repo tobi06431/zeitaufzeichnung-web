@@ -48,62 +48,14 @@
         </div>
       </div>
 
-      <!-- ================= STAMMDATEN ================= -->
+      <!-- ================= TÄTIGKEIT ================= -->
 
-      <div class="panel" data-panel-id="stammdaten">
+      <div class="panel" data-panel-id="taetigkeit">
         <div class="panel__header">
-          <div class="panel__title">Stammdaten</div>
+          <div class="panel__title">Tätigkeit</div>
           <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
         </div>
         <div class="panel__content">
-
-          <div class="grid">
-            <label>Einsatzort
-              <input name="Einsatzort" id="einsatzort_input" list="orte_datalist">
-            </label>
-
-            <label>GKZ
-              <input name="GKZ">
-            </label>
-          </div>
-
-          <datalist id="orte_datalist"></datalist>
-
-          <label>Monat/Jahr
-            <select name="Monat/Jahr" id="monatjahr_input" required></select>
-          </label>
-
-        </div>
-      </div>
-
-      <!-- ================= PERSON ================= -->
-
-      <div class="panel" data-panel-id="person">
-        <div class="panel__header">
-          <div class="panel__title">Person</div>
-          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
-        </div>
-        <div class="panel__content">
-
-          <div class="grid">
-            <label>Nachname
-              <input name="Nachname" id="nachname_input">
-            </label>
-
-            <label>Vorname
-              <input name="Vorname" id="vorname_input">
-            </label>
-          </div>
-
-          <div class="grid">
-            <label>Geburtsdatum
-              <input name="Geburtsdatum" id="geburtsdatum_input">
-            </label>
-
-            <label>Pers.-Nr.
-              <input name="Pers.-Nr.">
-            </label>
-          </div>
 
           <label>Tätigkeit
             <select name="Tätigkeit" id="taetigkeit_input">
@@ -125,46 +77,23 @@
         </div>
       </div>
 
-      <!-- ================= MEHRARBEIT ================= -->
+      <!-- ================= MONAT/JAHR ================= -->
 
-      <div class="panel" data-panel-id="mehrarbeit">
+      <div class="panel" data-panel-id="monatjahr">
         <div class="panel__header">
-          <div class="panel__title">Mehrarbeit</div>
+          <div class="panel__title">Monat/Jahr</div>
           <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
         </div>
         <div class="panel__content">
 
-          <div class="grid">
-            <label>Beschäftigungsumfang
-              <input name="Beschäftigungsumfang">
-            </label>
-
-            <label>Mehrarbeit Stunden
-              <input name="Mehrarbeit Stunden">
-            </label>
-          </div>
-
-          <label>Mehrarbeit (Textfeld)
-            <input name="Mehrarbeit (Textfeld)">
+          <label>Monat/Jahr
+            <select name="Monat/Jahr" id="monatjahr_input" required></select>
           </label>
-
-          <label>Datum</label>
-          <div class="row">
-            <input id="datum" name="Datum">
-            <button type="button" class="btn btn-secondary"
-              onclick="document.getElementById('datum').value='{{ today }}'">
-              Heute
-            </button>
-          </div>
-
-          <label>Mehrarbeitsstunden auszahlen</label>
-          <select name="Mehrarbeit_auszahlen">
-            <option value="Nein" selected>Nein</option>
-            <option value="Ja">Ja</option>
-          </select>
 
         </div>
       </div>
+
+      <datalist id="orte_datalist"></datalist>
 
       <!-- ================= ARBEITSZEITEN ================= -->
 
@@ -220,8 +149,6 @@
       </div>
 
       <input type="hidden" name="Arbeitszeiten" id="arbeitszeiten_json">
-
-      <hr class="sep">
 
       <!-- ================= GOTTESDIENSTE ================= -->
 
@@ -307,6 +234,103 @@
       </div>
 
       <input type="hidden" name="Gottesdienste" id="gottesdienste_json">
+
+      <hr class="sep">
+
+      <!-- ================= STAMMDATEN ================= -->
+
+      <div class="panel" data-panel-id="stammdaten">
+        <div class="panel__header">
+          <div class="panel__title">Stammdaten</div>
+          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
+        </div>
+        <div class="panel__content">
+
+          <div class="grid">
+            <label>Einsatzort
+              <input name="Einsatzort" id="einsatzort_input" list="orte_datalist">
+            </label>
+
+            <label>GKZ
+              <input name="GKZ">
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= PERSON ================= -->
+
+      <div class="panel" data-panel-id="person">
+        <div class="panel__header">
+          <div class="panel__title">Person</div>
+          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
+        </div>
+        <div class="panel__content">
+
+          <div class="grid">
+            <label>Nachname
+              <input name="Nachname" id="nachname_input">
+            </label>
+
+            <label>Vorname
+              <input name="Vorname" id="vorname_input">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>Geburtsdatum
+              <input name="Geburtsdatum" id="geburtsdatum_input">
+            </label>
+
+            <label>Pers.-Nr.
+              <input name="Pers.-Nr.">
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= MEHRARBEIT ================= -->
+
+      <div class="panel" data-panel-id="mehrarbeit">
+        <div class="panel__header">
+          <div class="panel__title">Mehrarbeit</div>
+          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
+        </div>
+        <div class="panel__content">
+
+          <div class="grid">
+            <label>Beschäftigungsumfang
+              <input name="Beschäftigungsumfang">
+            </label>
+
+            <label>Mehrarbeit Stunden
+              <input name="Mehrarbeit Stunden">
+            </label>
+          </div>
+
+          <label>Mehrarbeit (Textfeld)
+            <input name="Mehrarbeit (Textfeld)">
+          </label>
+
+          <label>Datum</label>
+          <div class="row">
+            <input id="datum" name="Datum">
+            <button type="button" class="btn btn-secondary"
+              onclick="document.getElementById('datum').value='{{ today }}'">
+              Heute
+            </button>
+          </div>
+
+          <label>Mehrarbeitsstunden auszahlen</label>
+          <select name="Mehrarbeit_auszahlen">
+            <option value="Nein" selected>Nein</option>
+            <option value="Ja">Ja</option>
+          </select>
+
+        </div>
+      </div>
 
       <div class="actions actions-bottom">
   <button
