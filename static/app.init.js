@@ -21,8 +21,14 @@ function init() {
     if (!el) return;
     el.value = window.loadProfileField ? window.loadProfileField(id) : el.value;
     const ev = (el.tagName && el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
-    el.addEventListener(ev, () => window.saveProfileField && window.saveProfileField(id, el.value));
+    el.addEventListener(ev, () => {
+      window.saveProfileField && window.saveProfileField(id, el.value);
+      if (id === 'taetigkeit_input') window.updateGottesdiensteVisibility && window.updateGottesdiensteVisibility();
+    });
   });
+  
+  // Initial visibility check for Gottesdienste
+  window.updateGottesdiensteVisibility && window.updateGottesdiensteVisibility();
 
   // kirchengemeinde load + listener
   const kirchEl = document.getElementById('kirchengemeinde_input');
