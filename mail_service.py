@@ -17,10 +17,13 @@ def send_pdf_mail(pdf_path: str, recipient: str, filename: str = None):
     smtp_user = _get_env("SMTP_USER")
     smtp_password = _get_env("SMTP_PASSWORD")
 
+    # Unterstütze mehrere Empfänger (kommagetrennt)
+    recipients = [r.strip() for r in recipient.split(",") if r.strip()]
+
     msg = EmailMessage()
     msg["Subject"] = "Zeitaufzeichnung – Formular"
     msg["From"] = smtp_user
-    msg["To"] = recipient
+    msg["To"] = ", ".join(recipients)
 
     msg.set_content(
         "Hallo,\n\nanbei das automatisch erzeugte PDF-Formular.\n\nViele Grüße\nZeitaufzeichnung Web"
@@ -51,10 +54,13 @@ def send_csv_mail(csv_path: str, recipient: str, filename: str = None):
     smtp_user = _get_env("SMTP_USER")
     smtp_password = _get_env("SMTP_PASSWORD")
 
+    # Unterstütze mehrere Empfänger (kommagetrennt)
+    recipients = [r.strip() for r in recipient.split(",") if r.strip()]
+
     msg = EmailMessage()
     msg["Subject"] = "Zeitaufzeichnung – CSV Daten"
     msg["From"] = smtp_user
-    msg["To"] = recipient
+    msg["To"] = ", ".join(recipients)
 
     msg.set_content(
         "Hallo,\n\nanbei die Zeitaufzeichnungsdaten als CSV-Datei.\n\nViele Grüße\nZeitaufzeichnung Web"
