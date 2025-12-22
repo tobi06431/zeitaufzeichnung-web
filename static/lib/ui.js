@@ -137,6 +137,8 @@ function isDateWithinSelectedMonth(dateStr) {
   return dateStr >= bounds.min && dateStr <= bounds.max;
 }
 
+window.isDateWithinSelectedMonth = isDateWithinSelectedMonth;
+
 function roundTimeTo5Minutes(t) {
   if (!t) return "";
   let [h, m] = t.split(":").map(Number);
@@ -352,8 +354,9 @@ function renderArbeitszeiten(list) {
 function updateGottesdiensteVisibility() {
   const taetigkeitEl = document.getElementById('taetigkeit_input');
   const gottesdienstePanel = document.querySelector('[data-panel-id="gottesdienste"]');
-  const gottesdiensteTable = document.querySelector('.table-wrap');
+  const gottesdiensteTable = document.getElementById('gottesdienste-table');
   const arbeitszeitenPanel = document.querySelector('[data-panel-id="arbeitszeiten"]');
+  const arbeitszeitenTable = document.getElementById('arbeitszeiten-table');
   
   if (!taetigkeitEl) return;
   
@@ -371,7 +374,6 @@ function updateGottesdiensteVisibility() {
   }
   
   // Arbeitszeiten für alle außer Organisten
-  const arbeitszeitenTable = document.getElementById('arbeitszeiten-table');
   if (arbeitszeitenPanel) {
     if (isOrganist) {
       arbeitszeitenPanel.style.display = 'none';
