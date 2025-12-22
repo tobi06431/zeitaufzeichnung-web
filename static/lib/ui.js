@@ -301,6 +301,53 @@ function initPanels() {
   });
 }
 
+/* Render Arbeitszeiten list */
+function renderArbeitszeiten(list) {
+  const tbody = document.getElementById('az_liste');
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  // sort by date and time
+  list.sort((a, b) => {
+    const ad = a.datum || "";
+    const bd = b.datum || "";
+    if (ad && bd) {
+      if (ad !== bd) return ad < bd ? -1 : 1;
+    } else if (ad) return -1;
+    else if (bd) return 1;
+
+    const ab = a.beginn || "";
+    const bb = b.beginn || "";
+    if (ab && bb) {
+      if (ab !== bb) return ab < bb ? -1 : 1;
+    } else if (ab) return -1;
+    else if (bb) return 1;
+
+    return 0;
+  });
+
+  list.forEach((az, i) => {
+    const row = document.createElement("tr");
+
+    try {
+      const dt = new Date((az.datum || "") + "T00:00:00");
+      const day = dt.getDay();
+      if (day === 0 || day === 6) row.classList.add("weekend");
+    } catch (e) {}
+
+    row.innerHTML = `
+      <td>${az.datum}</td>
+      <td>${az.beginn}</td>
+      <td>${az.ende}</td>
+      <td><button type="button" onclick="removeArbeitszeit(${i})">X</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  const hidden = document.getElementById('arbeitszeiten_json');
+  if (hidden) hidden.value = JSON.stringify(list);
+}
+
 /* Gottesdienste and Arbeitszeiten visibility based on Tätigkeit */
 function updateGottesdiensteVisibility() {
   const taetigkeitEl = document.getElementById('taetigkeit_input');
@@ -324,11 +371,14 @@ function updateGottesdiensteVisibility() {
   }
   
   // Arbeitszeiten für alle außer Organisten
+  const arbeitszeitenTable = document.getElementById('arbeitszeiten-table');
   if (arbeitszeitenPanel) {
     if (isOrganist) {
       arbeitszeitenPanel.style.display = 'none';
+      if (arbeitszeitenTable) arbeitszeitenTable.style.display = 'none';
     } else {
       arbeitszeitenPanel.style.display = '';
+      if (arbeitszeitenTable) arbeitszeitenTable.style.display = '';
     }
   }
 }
@@ -342,6 +392,7 @@ window.applySavedTimesIfAvailable = applySavedTimesIfAvailable;
 window.populateTimeSelect = populateTimeSelect;
 window.enforce5MinuteStep = enforce5MinuteStep;
 window.renderGottesdienste = renderGottesdienste;
+window.renderArbeitszeiten = renderArbeitszeiten;
 window.initPanels = initPanels;
 window.updateGottesdiensteVisibility = updateGottesdiensteVisibility;
 

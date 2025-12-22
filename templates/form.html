@@ -189,8 +189,37 @@
             </label>
           </div>
 
+          <div class="row" style="margin-top: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="addArbeitszeit()">
+              Arbeitszeit hinzufügen
+            </button>
+            <button type="button" class="btn btn-danger" onclick="clearArbeitszeiten()">
+              Liste leeren
+            </button>
+          </div>
+
+          <p class="section-hint">
+            Arbeitszeiten werden lokal im Browser gespeichert – getrennt nach Pfarrei und Monat/Jahr.
+          </p>
+
         </div>
       </div>
+
+      <div class="table-wrap" id="arbeitszeiten-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Beginn</th>
+              <th>Ende</th>
+              <th>Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="az_liste"></tbody>
+        </table>
+      </div>
+
+      <input type="hidden" name="Arbeitszeiten" id="arbeitszeiten_json">
 
       <hr class="sep">
 
@@ -318,6 +347,7 @@
 <script src="{{ url_for('static', filename='lib/storage.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/ui.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/gd.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/arbeitszeiten.js') }}"></script>
 <script src="{{ url_for('static', filename='app.init.js') }}"></script>
 
 </body>

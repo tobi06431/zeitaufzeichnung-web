@@ -10,6 +10,12 @@ function init() {
   window.loadGottesdienste && window.loadGottesdienste();
   window.updateListe && window.updateListe(); // if present
 
+  // set up arbeitszeiten context
+  const currentAZKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
+  window.setCurrentAZStorageKey && window.setCurrentAZStorageKey(currentAZKey);
+  window.loadArbeitszeiten && window.loadArbeitszeiten();
+  window.updateAZListe && window.updateAZListe();
+
   window.applyDateRestrictionSilently && window.applyDateRestrictionSilently();
 
   // time selects population (if selects are used)
@@ -39,10 +45,12 @@ function init() {
       window.saveProfileField && window.saveProfileField('kirchengemeinde_input', kirchEl.value);
       window.updateOrtSuggestions && window.updateOrtSuggestions();
       window.handleContextChange && window.handleContextChange();
+      window.handleAZContextChange && window.handleAZContextChange();
     });
     if (kirchEl.value) {
       window.updateOrtSuggestions && window.updateOrtSuggestions();
       window.handleContextChange && window.handleContextChange();
+      window.handleAZContextChange && window.handleAZContextChange();
     }
   }
 
@@ -64,7 +72,10 @@ function init() {
     window.applyDateRestrictionSilently && window.applyDateRestrictionSilently();
     const gd_datum = document.getElementById('gd_datum');
     if (gd_datum) gd_datum.value = '';
+    const az_datum = document.getElementById('arbeitszeit_datum');
+    if (az_datum) az_datum.value = '';
     window.handleContextChange && window.handleContextChange();
+    window.handleAZContextChange && window.handleAZContextChange();
   });
 
   window.initPanels && window.initPanels();
