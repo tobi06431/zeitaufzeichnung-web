@@ -301,22 +301,35 @@ function initPanels() {
   });
 }
 
-/* Gottesdienste visibility based on Tätigkeit */
+/* Gottesdienste and Arbeitszeiten visibility based on Tätigkeit */
 function updateGottesdiensteVisibility() {
   const taetigkeitEl = document.getElementById('taetigkeit_input');
   const gottesdienstePanel = document.querySelector('[data-panel-id="gottesdienste"]');
   const gottesdiensteTable = document.querySelector('.table-wrap');
+  const arbeitszeitenPanel = document.querySelector('[data-panel-id="arbeitszeiten"]');
   
-  if (!taetigkeitEl || !gottesdienstePanel) return;
+  if (!taetigkeitEl) return;
   
   const isOrganist = taetigkeitEl.value === 'Organist';
   
-  if (isOrganist) {
-    gottesdienstePanel.style.display = '';
-    if (gottesdiensteTable) gottesdiensteTable.style.display = '';
-  } else {
-    gottesdienstePanel.style.display = 'none';
-    if (gottesdiensteTable) gottesdiensteTable.style.display = 'none';
+  // Gottesdienste nur für Organisten
+  if (gottesdienstePanel) {
+    if (isOrganist) {
+      gottesdienstePanel.style.display = '';
+      if (gottesdiensteTable) gottesdiensteTable.style.display = '';
+    } else {
+      gottesdienstePanel.style.display = 'none';
+      if (gottesdiensteTable) gottesdiensteTable.style.display = 'none';
+    }
+  }
+  
+  // Arbeitszeiten für alle außer Organisten
+  if (arbeitszeitenPanel) {
+    if (isOrganist) {
+      arbeitszeitenPanel.style.display = 'none';
+    } else {
+      arbeitszeitenPanel.style.display = '';
+    }
   }
 }
 
