@@ -458,3 +458,95 @@ def delete_timerecord(user_id, month_year):
     
     conn.commit()
     conn.close()
+
+
+def init_profile_table():
+    """Erstellt die Profile-Tabelle, falls nicht vorhanden"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS profiles (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL UNIQUE,
+                vorname VARCHAR(255),
+                nachname VARCHAR(255),
+                geburtsdatum DATE,
+                kirchengemeinde VARCHAR(255),
+                taetigkeit VARCHAR(255),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL UNIQUE,
+                vorname TEXT,
+                nachname TEXT,
+                geburtsdatum TEXT,
+                kirchengemeinde TEXT,
+                taetigkeit TEXT,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+    
+    conn.commit()
+    conn.close()
+
+
+def get_profile(user_id):
+    """Lädt Profildaten eines Users"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''SELECT vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit 
+                     FROM profiles WHERE user_id = %s''', (user_id,))
+    else:
+        c.execute('''SELECT vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit 
+                     FROM profiles WHERE user_id = ?''', (user_id,))
+    
+    row = c.fetchone()
+    conn.close()
+    
+    if row:
+        return {
+            'vorname': row[0] or '',
+            'nachname': row[1] or '',
+            'geburtsdatum': row[2] or '',
+            'kirchengemeinde': row[3] or '',
+            'taetigkeit': row[4] or ''
+        }
+    return {}
+
+
+def save_profile(user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit):
+    """Speichert oder aktualisiert Profildaten"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''
+            INSERT INTO profiles (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (user_id) 
+            DO UPDATE SET 
+                vorname = EXCLUDED.vorname,
+                nachname = EXCLUDED.nachname,
+                geburtsdatum = EXCLUDED.geburtsdatum,
+                kirchengemeinde = EXCLUDED.kirchengemeinde,
+                taetigkeit = EXCLUDED.taetigkeit,
+                updated_at = NOW()
+        ''', (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit))
+    else:
+        c.execute('''
+            INSERT OR REPLACE INTO profiles (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        ''', (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit))
+    
+    conn.commit()
+    conn.close()

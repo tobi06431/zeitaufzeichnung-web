@@ -14,7 +14,7 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
-from users import init_db, init_timerecords_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord
+from users import init_db, init_timerecords_table, init_profile_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord, get_profile, save_profile
 import csv
 import json
 
@@ -49,6 +49,7 @@ login_manager.login_message = 'Bitte melde dich an, um fortzufahren.'
 # Datenbank initialisieren
 init_db()
 init_timerecords_table()
+init_profile_table()
 
 
 @login_manager.user_loader
@@ -223,6 +224,26 @@ def logout():
     logout_user()
     flash("✅ Du wurdest erfolgreich abgemeldet.")
     return redirect(url_for("login"))
+
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    """Benutzer-Profilseite zum Anzeigen und Bearbeiten persönlicher Daten"""
+    if request.method == "POST":
+        vorname = request.form.get("vorname", "").strip()
+        nachname = request.form.get("nachname", "").strip()
+        geburtsdatum = request.form.get("geburtsdatum", "").strip()
+        kirchengemeinde = request.form.get("kirchengemeinde", "").strip()
+        taetigkeit = request.form.get("taetigkeit", "").strip()
+        
+        save_profile(current_user.id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit)
+        flash("✅ Profil erfolgreich gespeichert!")
+        return redirect(url_for("profile"))
+    
+    # GET: Lade vorhandene Profildaten
+    profile_data = get_profile(current_user.id)
+    return render_template("profile.html", profile=profile_data)
 
 
 @app.route("/datenschutz")

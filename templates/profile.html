@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Profil - Zeitaufzeichnung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .profile-container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    .profile-card {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .profile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #eee;
+    }
+    .profile-header h1 {
+      margin: 0;
+      color: #333;
+    }
+    .back-link {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    .form-section {
+      margin-bottom: 30px;
+    }
+    .form-section h2 {
+      font-size: 1.3em;
+      color: #555;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+    .btn-save {
+      width: 100%;
+      padding: 12px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-save:hover {
+      background: #218838;
+    }
+    .user-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 30px;
+    }
+    .user-info p {
+      margin: 5px 0;
+      color: #666;
+    }
+    .user-info strong {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <h1>👤 Mein Profil</h1>
+      <a href="{{ url_for('index') }}" class="back-link">← Zurück zur Zeitaufzeichnung</a>
+    </div>
+
+    <div class="user-info">
+      <p><strong>E-Mail:</strong> {{ current_user.email }}</p>
+      <p><strong>Pfarrei:</strong> {{ current_user.pfarrei }}</p>
+      {% if current_user.is_admin %}
+      <p><strong>Status:</strong> <span style="color: #dc3545;">Administrator</span></p>
+      {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="form-section">
+        <h2>Person</h2>
+        
+        <div class="form-group">
+          <label for="vorname">Vorname</label>
+          <input type="text" id="vorname" name="vorname" value="{{ profile.get('vorname', '') }}">
+        </div>
+
+        <div class="form-group">
+          <label for="nachname">Nachname</label>
+          <input type="text" id="nachname" name="nachname" value="{{ profile.get('nachname', '') }}">
+        </div>
+
+        <div class="form-group">
+          <label for="geburtsdatum">Geburtsdatum</label>
+          <input type="date" id="geburtsdatum" name="geburtsdatum" value="{{ profile.get('geburtsdatum', '') }}">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Stammdaten</h2>
+        
+        <div class="form-group">
+          <label for="kirchengemeinde">Kath. Kirchengemeinde</label>
+          <select name="kirchengemeinde" id="kirchengemeinde">
+            <option value="">Bitte wählen...</option>
+            <option value="Heilige Katharina Kaspar Limburger Land" {% if profile.get('kirchengemeinde') == 'Heilige Katharina Kaspar Limburger Land' %}selected{% endif %}>Heilige Katharina Kaspar Limburger Land</option>
+            <option value="St. Peter und Paul Bad Camberg" {% if profile.get('kirchengemeinde') == 'St. Peter und Paul Bad Camberg' %}selected{% endif %}>St. Peter und Paul Bad Camberg</option>
+            <option value="Heilig Geist Goldener Grund" {% if profile.get('kirchengemeinde') == 'Heilig Geist Goldener Grund' %}selected{% endif %}>Heilig Geist Goldener Grund</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="taetigkeit">Tätigkeit</label>
+          <select name="taetigkeit" id="taetigkeit">
+            <option value="">Bitte wählen...</option>
+            <option value="Organist/-in" {% if profile.get('taetigkeit') == 'Organist/-in' %}selected{% endif %}>Organist/-in</option>
+            <option value="Chorleiter/-in" {% if profile.get('taetigkeit') == 'Chorleiter/-in' %}selected{% endif %}>Chorleiter/-in</option>
+            <option value="Mesner/-in" {% if profile.get('taetigkeit') == 'Mesner/-in' %}selected{% endif %}>Mesner/-in</option>
+            <option value="Lektor/-in" {% if profile.get('taetigkeit') == 'Lektor/-in' %}selected{% endif %}>Lektor/-in</option>
+            <option value="Hausmeister/-in" {% if profile.get('taetigkeit') == 'Hausmeister/-in' %}selected{% endif %}>Hausmeister/-in</option>
+            <option value="Reinigungskraft" {% if profile.get('taetigkeit') == 'Reinigungskraft' %}selected{% endif %}>Reinigungskraft</option>
+            <option value="Sonstige" {% if profile.get('taetigkeit') == 'Sonstige' %}selected{% endif %}>Sonstige</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-save">Profil speichern</button>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>
