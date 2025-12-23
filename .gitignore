@@ -1,3 +1,10 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# User-Datenbank (enthält sensible Daten)
+users.db
+
+# Temporäre Dateien
+*.pdf
+*.csv
