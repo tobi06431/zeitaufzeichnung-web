@@ -497,6 +497,55 @@ def init_profile_table():
         ''')
     
     conn.commit()
+    
+    # Migration: Alte Spalten umbenennen/neue hinzufügen falls Tabelle bereits existiert
+    try:
+        if USE_POSTGRES:
+            # Prüfe ob alte Spalten existieren und migriere
+            c.execute("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='profiles' AND column_name='kirchengemeinde'
+            """)
+            if c.fetchone():
+                # Alte Spalten löschen, neue hinzufügen
+                c.execute("ALTER TABLE profiles DROP COLUMN IF EXISTS kirchengemeinde")
+                c.execute("ALTER TABLE profiles DROP COLUMN IF EXISTS taetigkeit")
+                c.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS personalnummer VARCHAR(255)")
+                c.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS einsatzort VARCHAR(255)")
+                c.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gkz VARCHAR(255)")
+                conn.commit()
+        else:
+            # SQLite: Prüfe ob alte Spalten existieren
+            c.execute("PRAGMA table_info(profiles)")
+            columns = [row[1] for row in c.fetchall()]
+            if 'kirchengemeinde' in columns:
+                # SQLite unterstützt kein DROP COLUMN vor Version 3.35.0
+                # Erstelle neue Tabelle und kopiere Daten
+                c.execute('''
+                    CREATE TABLE profiles_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL UNIQUE,
+                        vorname TEXT,
+                        nachname TEXT,
+                        geburtsdatum TEXT,
+                        personalnummer TEXT,
+                        einsatzort TEXT,
+                        gkz TEXT,
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                ''')
+                c.execute('''
+                    INSERT INTO profiles_new (user_id, vorname, nachname, geburtsdatum, updated_at)
+                    SELECT user_id, vorname, nachname, geburtsdatum, updated_at FROM profiles
+                ''')
+                c.execute('DROP TABLE profiles')
+                c.execute('ALTER TABLE profiles_new RENAME TO profiles')
+                conn.commit()
+    except Exception as e:
+        print(f"Migration Warnung (kann ignoriert werden wenn Tabelle neu ist): {e}")
+        conn.rollback()
+    
     conn.close()
 
 
