@@ -14,7 +14,7 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
-from users import init_db, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account
+from users import init_db, init_timerecords_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord
 import csv
 import json
 
@@ -48,6 +48,7 @@ login_manager.login_message = 'Bitte melde dich an, um fortzufahren.'
 
 # Datenbank initialisieren
 init_db()
+init_timerecords_table()
 
 
 @login_manager.user_loader
@@ -274,6 +275,53 @@ def account_delete():
             flash("❌ Bitte gib 'LÖSCHEN' ein, um zu bestätigen.")
     
     return render_template("account_delete.html")
+
+
+# ============= API für Zeitaufzeichnungen =============
+
+@app.route("/api/timerecords", methods=["GET"])
+@login_required
+def api_get_all_timerecords():
+    """Gibt alle Zeitaufzeichnungen des aktuellen Users zurück"""
+    records = get_all_timerecords(current_user.id)
+    return {"success": True, "records": records}
+
+
+@app.route("/api/timerecords/<month_year>", methods=["GET"])
+@login_required
+def api_get_timerecord(month_year):
+    """Gibt eine spezifische Zeitaufzeichnung zurück"""
+    record = get_timerecord(current_user.id, month_year)
+    if record:
+        return {"success": True, "record": record}
+    return {"success": False, "message": "Keine Daten gefunden"}, 404
+
+
+@app.route("/api/timerecords/<month_year>", methods=["POST", "PUT"])
+@login_required
+def api_save_timerecord(month_year):
+    """Speichert oder aktualisiert eine Zeitaufzeichnung"""
+    data = request.get_json()
+    
+    if not data or "form_data" not in data:
+        return {"success": False, "message": "Keine Formulardaten übermittelt"}, 400
+    
+    try:
+        save_timerecord(current_user.id, month_year, data["form_data"])
+        return {"success": True, "message": "Daten gespeichert"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}, 500
+
+
+@app.route("/api/timerecords/<month_year>", methods=["DELETE"])
+@login_required
+def api_delete_timerecord(month_year):
+    """Löscht eine Zeitaufzeichnung"""
+    try:
+        delete_timerecord(current_user.id, month_year)
+        return {"success": True, "message": "Daten gelöscht"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}, 500
 
 
 @app.route("/", methods=["GET", "POST"])

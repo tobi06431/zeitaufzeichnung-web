@@ -83,6 +83,42 @@ def init_db():
     conn.close()
 
 
+def init_timerecords_table():
+    """Erstellt die Tabelle für Zeitaufzeichnungen"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS timerecords (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                month_year VARCHAR(10) NOT NULL,
+                form_data TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE(user_id, month_year)
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS timerecords (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                month_year TEXT NOT NULL,
+                form_data TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE(user_id, month_year)
+            )
+        ''')
+    
+    conn.commit()
+    conn.close()
+
+
 def get_user_by_id(user_id):
     """Lädt User anhand der ID"""
     conn = get_db_connection()
@@ -337,6 +373,88 @@ def delete_user_account(user_id):
         c.execute('DELETE FROM users WHERE id = %s', (user_id,))
     else:
         c.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    
+    conn.commit()
+    conn.close()
+
+
+# ============= Zeitaufzeichnungen =============
+
+def save_timerecord(user_id, month_year, form_data):
+    """Speichert oder aktualisiert eine Zeitaufzeichnung"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''
+            INSERT INTO timerecords (user_id, month_year, form_data, updated_at)
+            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, month_year)
+            DO UPDATE SET form_data = EXCLUDED.form_data, updated_at = CURRENT_TIMESTAMP
+        ''', (user_id, month_year, form_data))
+    else:
+        # SQLite: Erst prüfen ob existiert
+        c.execute('SELECT id FROM timerecords WHERE user_id = ? AND month_year = ?', (user_id, month_year))
+        existing = c.fetchone()
+        
+        if existing:
+            c.execute('UPDATE timerecords SET form_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND month_year = ?',
+                      (form_data, user_id, month_year))
+        else:
+            c.execute('INSERT INTO timerecords (user_id, month_year, form_data) VALUES (?, ?, ?)',
+                      (user_id, month_year, form_data))
+    
+    conn.commit()
+    conn.close()
+
+
+def get_timerecord(user_id, month_year):
+    """Lädt eine Zeitaufzeichnung"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('SELECT form_data, updated_at FROM timerecords WHERE user_id = %s AND month_year = %s',
+                  (user_id, month_year))
+    else:
+        c.execute('SELECT form_data, updated_at FROM timerecords WHERE user_id = ? AND month_year = ?',
+                  (user_id, month_year))
+    
+    row = c.fetchone()
+    conn.close()
+    
+    if row:
+        return {"form_data": row[0], "updated_at": str(row[1])}
+    return None
+
+
+def get_all_timerecords(user_id):
+    """Lädt alle Zeitaufzeichnungen eines Users"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('SELECT month_year, form_data, updated_at FROM timerecords WHERE user_id = %s ORDER BY month_year DESC',
+                  (user_id,))
+    else:
+        c.execute('SELECT month_year, form_data, updated_at FROM timerecords WHERE user_id = ? ORDER BY month_year DESC',
+                  (user_id,))
+    
+    rows = c.fetchall()
+    conn.close()
+    
+    return [{"month_year": row[0], "form_data": row[1], "updated_at": str(row[2])} for row in rows]
+
+
+def delete_timerecord(user_id, month_year):
+    """Löscht eine Zeitaufzeichnung"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('DELETE FROM timerecords WHERE user_id = %s AND month_year = %s', (user_id, month_year))
+    else:
+        c.execute('DELETE FROM timerecords WHERE user_id = ? AND month_year = ?', (user_id, month_year))
     
     conn.commit()
     conn.close()
