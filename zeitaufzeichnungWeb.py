@@ -5,7 +5,9 @@ from flask import Flask, render_template, request, send_file, redirect, url_for,
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_wtf.csrf import CSRFProtectimport bcryptfrom datetime import date
+from flask_wtf.csrf import CSRFProtect
+import bcrypt
+from datetime import date
 import re
 import tempfile
 import os
