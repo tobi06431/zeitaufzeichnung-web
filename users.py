@@ -326,3 +326,17 @@ def reset_password(user_id, new_password):
     
     conn.commit()
     conn.close()
+
+
+def delete_user_account(user_id):
+    """Löscht einen User-Account komplett (DSGVO Art. 17 - Recht auf Löschung)"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('DELETE FROM users WHERE id = %s', (user_id,))
+    else:
+        c.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    
+    conn.commit()
+    conn.close()

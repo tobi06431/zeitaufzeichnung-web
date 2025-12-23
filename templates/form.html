@@ -20,6 +20,8 @@
         {% if current_user.is_admin %}
         <a href="{{ url_for('admin_dashboard') }}" style="color: #007bff; text-decoration: none; display: block; margin-top: 5px;">⚙️ Admin</a>
         {% endif %}
+        <a href="{{ url_for('account_export') }}" style="color: #28a745; text-decoration: none; display: block; margin-top: 5px;">📥 Daten exportieren</a>
+        <a href="{{ url_for('account_delete') }}" style="color: #ffc107; text-decoration: none; display: block; margin-top: 5px;">🗑️ Account löschen</a>
         <a href="{{ url_for('logout') }}" style="color: #dc3545; text-decoration: none; display: block; margin-top: 5px;">Abmelden</a>
       </div>
     </div>
@@ -377,6 +379,31 @@
 
   </div>
 </div>
+
+<!-- Cookie-Hinweis (DSGVO-konform) -->
+<div id="cookie-banner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; color: white; padding: 20px; text-align: center; z-index: 9999; box-shadow: 0 -2px 10px rgba(0,0,0,0.3);">
+  <div style="max-width: 800px; margin: 0 auto;">
+    <p style="margin: 0 0 15px 0;">
+      Diese Website verwendet technisch notwendige Session-Cookies zur Authentifizierung. 
+      <a href="{{ url_for('datenschutz') }}" style="color: #3498db; text-decoration: underline;" target="_blank">Mehr erfahren</a>
+    </p>
+    <button onclick="document.getElementById('cookie-banner').style.display='none'; localStorage.setItem('cookieAccepted', 'true');" style="background: #3498db; color: white; border: none; padding: 10px 30px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+      Verstanden
+    </button>
+  </div>
+</div>
+
+<footer style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+  <a href="{{ url_for('datenschutz') }}" style="color: #999; margin: 0 10px;">Datenschutz</a> | 
+  <a href="{{ url_for('impressum') }}" style="color: #999; margin: 0 10px;">Impressum</a>
+</footer>
+
+<script>
+  // Cookie-Banner anzeigen, wenn nicht akzeptiert
+  if (!localStorage.getItem('cookieAccepted')) {
+    document.getElementById('cookie-banner').style.display = 'block';
+  }
+</script>
 
 <script src="{{ url_for('static', filename='lib/storage.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/ui.js') }}"></script>

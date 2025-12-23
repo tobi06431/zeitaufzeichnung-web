@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, request, send_file, redirect, url_for, flash
+from flask import Flask, render_template, request, send_file, redirect, url_for, flash, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -14,8 +14,9 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
-from users import init_db, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password
+from users import init_db, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account
 import csv
+import json
 
 app = Flask(__name__)
 
@@ -84,6 +85,12 @@ def register():
         password = request.form.get("password")
         password_confirm = request.form.get("password_confirm")
         pfarrei = request.form.get("pfarrei")
+        datenschutz = request.form.get("datenschutz")
+        
+        # DSGVO: Datenschutz-Zustimmung prüfen
+        if not datenschutz:
+            flash("❌ Bitte stimme der Datenschutzerklärung zu.")
+            return render_template("register.html")
         
         if password != password_confirm:
             flash("❌ Passwörter stimmen nicht überein.")
@@ -215,6 +222,58 @@ def logout():
     logout_user()
     flash("✅ Du wurdest erfolgreich abgemeldet.")
     return redirect(url_for("login"))
+
+
+@app.route("/datenschutz")
+def datenschutz():
+    """DSGVO-Datenschutzerklärung"""
+    return render_template("datenschutz.html")
+
+
+@app.route("/impressum")
+def impressum():
+    """Impressum"""
+    return render_template("impressum.html")
+
+
+@app.route("/account/export")
+@login_required
+def account_export():
+    """Exportiert alle Benutzerdaten als JSON (DSGVO Art. 20)"""
+    user_data = {
+        "id": current_user.id,
+        "email": current_user.email,
+        "pfarrei": current_user.pfarrei,
+        "is_admin": current_user.is_admin,
+        "is_approved": current_user.is_approved,
+        "export_date": date.today().isoformat(),
+        "hinweis": "Zeitaufzeichnungsdaten werden nicht in der Datenbank gespeichert, daher nicht exportiert."
+    }
+    
+    response = make_response(json.dumps(user_data, indent=2, ensure_ascii=False))
+    response.headers['Content-Type'] = 'application/json; charset=utf-8'
+    response.headers['Content-Disposition'] = f'attachment; filename=account_data_{current_user.id}.json'
+    
+    return response
+
+
+@app.route("/account/delete", methods=["GET", "POST"])
+@login_required
+def account_delete():
+    """Löscht den eigenen Account (DSGVO Art. 17)"""
+    if request.method == "POST":
+        confirm = request.form.get("confirm")
+        
+        if confirm == "LÖSCHEN":
+            user_id = current_user.id
+            logout_user()
+            delete_user_account(user_id)
+            flash("✅ Dein Account wurde erfolgreich gelöscht. Alle Daten wurden entfernt.")
+            return redirect(url_for("login"))
+        else:
+            flash("❌ Bitte gib 'LÖSCHEN' ein, um zu bestätigen.")
+    
+    return render_template("account_delete.html")
 
 
 @app.route("/", methods=["GET", "POST"])
