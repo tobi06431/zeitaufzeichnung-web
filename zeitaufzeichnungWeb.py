@@ -3,6 +3,9 @@
 
 from flask import Flask, render_template, request, send_file, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 from datetime import date
 import re
 import tempfile
@@ -17,6 +20,23 @@ app = Flask(__name__)
 
 # Für Flash-Messages (bei Render später als ENV setzen!)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
+
+# Sichere Session-Einstellungen
+app.config['SESSION_COOKIE_SECURE'] = True  # Nur über HTTPS (in Production)
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Kein JavaScript-Zugriff
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF-Schutz
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 Stunde
+
+# CSRF-Schutz
+csrf = CSRFProtect(app)
+
+# Rate Limiting (Brute-Force-Schutz)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Flask-Login Setup
 login_manager = LoginManager()
@@ -34,6 +54,7 @@ def load_user(user_id):
 
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")  # Max 5 Login-Versuche pro Minute
 def login():
     if request.method == "POST":
         username = request.form.get("username")
@@ -208,4 +229,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

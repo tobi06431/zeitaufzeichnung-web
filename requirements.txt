@@ -1,5 +1,7 @@
 flask
 flask-login
+flask-limiter
+flask-wtf
 pypdf
 gunicorn
 bcrypt

@@ -34,13 +34,21 @@ def main():
     else:
         pfarrei = input("Pfarrei-Name eingeben: ").strip()
     
-    user = create_user(username, password, pfarrei)
-    
-    if user:
-        print(f"\n✅ Benutzer '{username}' erfolgreich erstellt!")
-        print(f"   Pfarrei: {pfarrei}")
-    else:
-        print(f"\n❌ Fehler: Benutzer '{username}' existiert bereits.")
+    try:
+        user = create_user(username, password, pfarrei)
+        
+        if user:
+            print(f"\n✅ Benutzer '{username}' erfolgreich erstellt!")
+            print(f"   Pfarrei: {pfarrei}")
+        else:
+            print(f"\n❌ Fehler: Benutzer '{username}' existiert bereits.")
+    except ValueError as e:
+        print(f"\n❌ Fehler: {e}")
+        print("\nPasswort-Anforderungen:")
+        print("  - Mindestens 8 Zeichen")
+        print("  - Mindestens 1 Großbuchstabe")
+        print("  - Mindestens 1 Kleinbuchstabe")
+        print("  - Mindestens 1 Zahl")
 
 
 if __name__ == "__main__":

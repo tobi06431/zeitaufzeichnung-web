@@ -77,7 +77,17 @@ def verify_password(username, password):
 
 
 def create_user(username, password, pfarrei):
-    """Erstellt einen neuen User"""
+    """Erstellt einen neuen User mit Passwort-Validierung"""
+    # Passwort-Validierung
+    if len(password) < 8:
+        raise ValueError("Passwort muss mindestens 8 Zeichen haben")
+    if not any(c.isupper() for c in password):
+        raise ValueError("Passwort muss mindestens einen Großbuchstaben enthalten")
+    if not any(c.islower() for c in password):
+        raise ValueError("Passwort muss mindestens einen Kleinbuchstaben enthalten")
+    if not any(c.isdigit() for c in password):
+        raise ValueError("Passwort muss mindestens eine Zahl enthalten")
+    
     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     conn = sqlite3.connect(DATABASE)
