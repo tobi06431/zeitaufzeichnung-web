@@ -153,6 +153,7 @@
         <tr>
           <th>ID</th>
           <th>Benutzername</th>
+          <th>E-Mail</th>
           <th>Pfarrei</th>
           <th>Status</th>
           <th>Aktionen</th>
@@ -163,6 +164,7 @@
         <tr>
           <td>{{ user.id }}</td>
           <td>{{ user.username }}</td>
+          <td>{{ user.email or '-' }}</td>
           <td>{{ user.pfarrei }}</td>
           <td>
             {% if user.is_admin %}
