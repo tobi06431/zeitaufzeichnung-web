@@ -145,33 +145,24 @@
           <label for="geburtsdatum">Geburtsdatum</label>
           <input type="date" id="geburtsdatum" name="geburtsdatum" value="{{ profile.get('geburtsdatum', '') }}">
         </div>
+
+        <div class="form-group">
+          <label for="personalnummer">Personalnummer</label>
+          <input type="text" id="personalnummer" name="personalnummer" value="{{ profile.get('personalnummer', '') }}">
+        </div>
       </div>
 
       <div class="form-section">
         <h2>Stammdaten</h2>
         
         <div class="form-group">
-          <label for="kirchengemeinde">Kath. Kirchengemeinde</label>
-          <select name="kirchengemeinde" id="kirchengemeinde">
-            <option value="">Bitte wählen...</option>
-            <option value="Heilige Katharina Kaspar Limburger Land" {% if profile.get('kirchengemeinde') == 'Heilige Katharina Kaspar Limburger Land' %}selected{% endif %}>Heilige Katharina Kaspar Limburger Land</option>
-            <option value="St. Peter und Paul Bad Camberg" {% if profile.get('kirchengemeinde') == 'St. Peter und Paul Bad Camberg' %}selected{% endif %}>St. Peter und Paul Bad Camberg</option>
-            <option value="Heilig Geist Goldener Grund" {% if profile.get('kirchengemeinde') == 'Heilig Geist Goldener Grund' %}selected{% endif %}>Heilig Geist Goldener Grund</option>
-          </select>
+          <label for="einsatzort">Einsatzort</label>
+          <input type="text" id="einsatzort" name="einsatzort" value="{{ profile.get('einsatzort', '') }}">
         </div>
 
         <div class="form-group">
-          <label for="taetigkeit">Tätigkeit</label>
-          <select name="taetigkeit" id="taetigkeit">
-            <option value="">Bitte wählen...</option>
-            <option value="Organist/-in" {% if profile.get('taetigkeit') == 'Organist/-in' %}selected{% endif %}>Organist/-in</option>
-            <option value="Chorleiter/-in" {% if profile.get('taetigkeit') == 'Chorleiter/-in' %}selected{% endif %}>Chorleiter/-in</option>
-            <option value="Mesner/-in" {% if profile.get('taetigkeit') == 'Mesner/-in' %}selected{% endif %}>Mesner/-in</option>
-            <option value="Lektor/-in" {% if profile.get('taetigkeit') == 'Lektor/-in' %}selected{% endif %}>Lektor/-in</option>
-            <option value="Hausmeister/-in" {% if profile.get('taetigkeit') == 'Hausmeister/-in' %}selected{% endif %}>Hausmeister/-in</option>
-            <option value="Reinigungskraft" {% if profile.get('taetigkeit') == 'Reinigungskraft' %}selected{% endif %}>Reinigungskraft</option>
-            <option value="Sonstige" {% if profile.get('taetigkeit') == 'Sonstige' %}selected{% endif %}>Sonstige</option>
-          </select>
+          <label for="gkz">GKZ</label>
+          <input type="text" id="gkz" name="gkz" value="{{ profile.get('gkz', '') }}">
         </div>
       </div>
 

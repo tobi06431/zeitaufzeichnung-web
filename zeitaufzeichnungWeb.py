@@ -234,10 +234,11 @@ def profile():
         vorname = request.form.get("vorname", "").strip()
         nachname = request.form.get("nachname", "").strip()
         geburtsdatum = request.form.get("geburtsdatum", "").strip()
-        kirchengemeinde = request.form.get("kirchengemeinde", "").strip()
-        taetigkeit = request.form.get("taetigkeit", "").strip()
+        personalnummer = request.form.get("personalnummer", "").strip()
+        einsatzort = request.form.get("einsatzort", "").strip()
+        gkz = request.form.get("gkz", "").strip()
         
-        save_profile(current_user.id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit)
+        save_profile(current_user.id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz)
         flash("✅ Profil erfolgreich gespeichert!")
         return redirect(url_for("profile"))
     
@@ -351,6 +352,15 @@ def index():
     if request.method == "POST":
         form_data = dict(request.form)
         action = request.form.get('action')
+
+        # Lade Profildaten und füge sie zu form_data hinzu (für PDF/CSV)
+        profile_data = get_profile(current_user.id)
+        form_data['Nachname'] = profile_data.get('nachname', '')
+        form_data['Vorname'] = profile_data.get('vorname', '')
+        form_data['Geburtsdatum'] = profile_data.get('geburtsdatum', '')
+        form_data['Pers.-Nr.'] = profile_data.get('personalnummer', '')
+        form_data['Einsatzort'] = profile_data.get('einsatzort', '')
+        form_data['GKZ'] = profile_data.get('gkz', '')
 
         # CSV senden (kein PDF nötig)
         if action == 'send_csv':

@@ -473,8 +473,9 @@ def init_profile_table():
                 vorname VARCHAR(255),
                 nachname VARCHAR(255),
                 geburtsdatum DATE,
-                kirchengemeinde VARCHAR(255),
-                taetigkeit VARCHAR(255),
+                personalnummer VARCHAR(255),
+                einsatzort VARCHAR(255),
+                gkz VARCHAR(255),
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
@@ -487,8 +488,9 @@ def init_profile_table():
                 vorname TEXT,
                 nachname TEXT,
                 geburtsdatum TEXT,
-                kirchengemeinde TEXT,
-                taetigkeit TEXT,
+                personalnummer TEXT,
+                einsatzort TEXT,
+                gkz TEXT,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
@@ -504,10 +506,10 @@ def get_profile(user_id):
     c = conn.cursor()
     
     if USE_POSTGRES:
-        c.execute('''SELECT vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit 
+        c.execute('''SELECT vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz 
                      FROM profiles WHERE user_id = %s''', (user_id,))
     else:
-        c.execute('''SELECT vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit 
+        c.execute('''SELECT vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz 
                      FROM profiles WHERE user_id = ?''', (user_id,))
     
     row = c.fetchone()
@@ -518,35 +520,37 @@ def get_profile(user_id):
             'vorname': row[0] or '',
             'nachname': row[1] or '',
             'geburtsdatum': row[2] or '',
-            'kirchengemeinde': row[3] or '',
-            'taetigkeit': row[4] or ''
+            'personalnummer': row[3] or '',
+            'einsatzort': row[4] or '',
+            'gkz': row[5] or ''
         }
     return {}
 
 
-def save_profile(user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit):
+def save_profile(user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz):
     """Speichert oder aktualisiert Profildaten"""
     conn = get_db_connection()
     c = conn.cursor()
     
     if USE_POSTGRES:
         c.execute('''
-            INSERT INTO profiles (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            INSERT INTO profiles (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
             ON CONFLICT (user_id) 
             DO UPDATE SET 
                 vorname = EXCLUDED.vorname,
                 nachname = EXCLUDED.nachname,
                 geburtsdatum = EXCLUDED.geburtsdatum,
-                kirchengemeinde = EXCLUDED.kirchengemeinde,
-                taetigkeit = EXCLUDED.taetigkeit,
+                personalnummer = EXCLUDED.personalnummer,
+                einsatzort = EXCLUDED.einsatzort,
+                gkz = EXCLUDED.gkz,
                 updated_at = NOW()
-        ''', (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit))
+        ''', (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz))
     else:
         c.execute('''
-            INSERT OR REPLACE INTO profiles (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-        ''', (user_id, vorname, nachname, geburtsdatum, kirchengemeinde, taetigkeit))
+            INSERT OR REPLACE INTO profiles (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ''', (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz))
     
     conn.commit()
     conn.close()
