@@ -35,13 +35,14 @@ def get_db_connection():
 
 class User(UserMixin):
     """Minimales User-Modell für Flask-Login"""
-    def __init__(self, id, username, pfarrei, email=None, is_admin=False, is_approved=True):
+    def __init__(self, id, username, pfarrei, email=None, is_admin=False, is_approved=True, password_hash=None):
         self.id = id
         self.username = username
         self.pfarrei = pfarrei
         self.email = email
         self.is_admin = is_admin
         self.is_approved = is_approved
+        self.password_hash = password_hash
 
 
 def init_db():
@@ -232,18 +233,18 @@ def get_user_by_email(email):
     c = conn.cursor()
     
     if USE_POSTGRES:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE email = %s', (email,))
+        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE email = %s', (email,))
     else:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE email = ?', (email,))
+        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE email = ?', (email,))
     
     row = c.fetchone()
     conn.close()
     
     if row:
         if USE_POSTGRES:
-            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+            return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=row[5], is_approved=row[6], password_hash=row[2])
         else:
-            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+            return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=bool(row[5]), is_approved=bool(row[6]), password_hash=row[2])
     return None
 
 

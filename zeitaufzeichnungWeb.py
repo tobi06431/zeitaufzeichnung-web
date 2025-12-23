@@ -5,8 +5,7 @@ from flask import Flask, render_template, request, send_file, redirect, url_for,
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_wtf.csrf import CSRFProtect
-from datetime import date
+from flask_wtf.csrf import CSRFProtectimport bcryptfrom datetime import date
 import re
 import tempfile
 import os
@@ -57,20 +56,20 @@ def load_user(user_id):
 @limiter.limit("5 per minute")  # Max 5 Login-Versuche pro Minute
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
+        email = request.form.get("email")
         password = request.form.get("password")
         
-        user = verify_password(username, password)
+        user = get_user_by_email(email)
         
-        if user:
+        if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
             if not user.is_approved:
                 flash("❌ Dein Account wartet noch auf Freigabe durch einen Administrator.")
                 return render_template("login.html")
             login_user(user)
-            flash(f"✅ Willkommen, {user.username}!")
+            flash(f"✅ Willkommen zurück!")
             return redirect(url_for("index"))
         else:
-            flash("❌ Falscher Benutzername oder Passwort.")
+            flash("❌ Falsche E-Mail oder Passwort.")
     
     return render_template("login.html")
 
@@ -79,7 +78,6 @@ def login():
 @limiter.limit("10 per hour")  # Max 10 Registrierungen pro Stunde
 def register():
     if request.method == "POST":
-        username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
         password_confirm = request.form.get("password_confirm")
@@ -93,13 +91,21 @@ def register():
             flash("❌ E-Mail-Adresse ist erforderlich.")
             return render_template("register.html")
         
+        # Prüfe ob E-Mail bereits existiert
+        if get_user_by_email(email):
+            flash("❌ Diese E-Mail-Adresse ist bereits registriert.")
+            return render_template("register.html")
+        
+        # Generiere Benutzernamen aus E-Mail (Teil vor @)
+        username = email.split('@')[0]
+        
         try:
             user = create_user(username, password, pfarrei, email=email, is_admin=False, is_approved=False)
             if user:
                 flash("✅ Registrierung erfolgreich! Warte auf Freigabe durch einen Administrator.")
                 return redirect(url_for("login"))
             else:
-                flash("❌ Benutzername existiert bereits.")
+                flash("❌ Ein Fehler ist aufgetreten.")
         except ValueError as e:
             flash(f"❌ {e}")
     
