@@ -76,7 +76,7 @@ def login():
 
 
 @app.route("/register", methods=["GET", "POST"])
-@limiter.limit("3 per hour")  # Max 3 Registrierungen pro Stunde
+@limiter.limit("10 per hour")  # Max 10 Registrierungen pro Stunde
 def register():
     if request.method == "POST":
         username = request.form.get("username")
