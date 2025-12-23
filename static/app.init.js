@@ -1,26 +1,7 @@
 /* Bootstrap: init wiring */
 
 async function init() {
-  // ===== NEU: Daten vom Server laden =====
-  const dataLoaded = await window.loadAllFormData();
-  if (dataLoaded) {
-    console.log('✅ Formulardaten vom Server geladen');
-  }
-  
-  // Auto-Save aktivieren (alle 30 Sekunden)
-  window.startAutoSave && window.startAutoSave();
-  
-  // Event-Listener für alle Formularfelder (Auto-Save bei Änderungen)
-  document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.name && el.name !== 'csrf_token' && el.name !== 'action') {
-      el.addEventListener('change', () => window.triggerSave && window.triggerSave());
-      if (el.tagName.toLowerCase() === 'input' || el.tagName.toLowerCase() === 'textarea') {
-        el.addEventListener('input', () => window.triggerSave && window.triggerSave());
-      }
-    }
-  });
-  
-  // ===== REST: Bisheriger Code =====
+  // ===== ERST: Normale Initialisierung (Storage-Keys setzen) =====
   window.populateMonatJahrSelect && window.populateMonatJahrSelect();
   window.updateOrtSuggestions && window.updateOrtSuggestions();
 
@@ -99,6 +80,25 @@ async function init() {
   });
 
   window.initPanels && window.initPanels();
+  
+  // ===== JETZT: Daten vom Server laden (nachdem alles initialisiert ist) =====
+  const dataLoaded = await window.loadAllFormData();
+  if (dataLoaded) {
+    console.log('✅ Formulardaten vom Server geladen - Listen aktualisiert');
+  }
+  
+  // Auto-Save aktivieren (alle 30 Sekunden)
+  window.startAutoSave && window.startAutoSave();
+  
+  // Event-Listener für alle Formularfelder (Auto-Save bei Änderungen)
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.name && el.name !== 'csrf_token' && el.name !== 'action') {
+      el.addEventListener('change', () => window.triggerSave && window.triggerSave());
+      if (el.tagName.toLowerCase() === 'input' || el.tagName.toLowerCase() === 'textarea') {
+        el.addEventListener('input', () => window.triggerSave && window.triggerSave());
+      }
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
