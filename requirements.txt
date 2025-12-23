@@ -5,3 +5,4 @@ flask-wtf
 pypdf
 gunicorn
 bcrypt
+psycopg2-binary

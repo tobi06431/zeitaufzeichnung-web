@@ -1,13 +1,36 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sqlite3
+import os
 import bcrypt
 import secrets
 from datetime import datetime, timedelta
 from flask_login import UserMixin
 
-DATABASE = 'users.db'
+# Datenbank-Konfiguration: PostgreSQL (Production) oder SQLite (Lokal)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # PostgreSQL für Production (Render)
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    USE_POSTGRES = True
+    # Render gibt manchmal postgres:// statt postgresql:// - fix das
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+else:
+    # SQLite für lokale Entwicklung
+    import sqlite3
+    USE_POSTGRES = False
+    DATABASE = 'users.db'
+
+
+def get_db_connection():
+    """Erstellt Datenbankverbindung (PostgreSQL oder SQLite)"""
+    if USE_POSTGRES:
+        return psycopg2.connect(DATABASE_URL)
+    else:
+        return sqlite3.connect(DATABASE)
 
 
 class User(UserMixin):
@@ -23,56 +46,94 @@ class User(UserMixin):
 
 def init_db():
     """Erstellt die User-Tabelle, falls nicht vorhanden"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            pfarrei TEXT NOT NULL,
-            email TEXT,
-            is_admin INTEGER DEFAULT 0,
-            is_approved INTEGER DEFAULT 0,
-            reset_token TEXT,
-            reset_token_expiry TEXT
-        )
-    ''')
+    
+    if USE_POSTGRES:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                pfarrei TEXT NOT NULL,
+                email VARCHAR(255),
+                is_admin BOOLEAN DEFAULT FALSE,
+                is_approved BOOLEAN DEFAULT FALSE,
+                reset_token TEXT,
+                reset_token_expiry TIMESTAMP
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                pfarrei TEXT NOT NULL,
+                email TEXT,
+                is_admin INTEGER DEFAULT 0,
+                is_approved INTEGER DEFAULT 0,
+                reset_token TEXT,
+                reset_token_expiry TEXT
+            )
+        ''')
+    
     conn.commit()
     conn.close()
 
 
 def get_user_by_id(user_id):
     """Lädt User anhand der ID"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = ?', (user_id,))
+    
+    if USE_POSTGRES:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = %s', (user_id,))
+    else:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = ?', (user_id,))
+    
     row = c.fetchone()
     conn.close()
     
     if row:
-        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+        if USE_POSTGRES:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+        else:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
     return None
 
 
 def get_user_by_username(username):
     """Lädt User anhand des Usernamens"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
+    
+    if USE_POSTGRES:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = %s', (username,))
+    else:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
+    
     row = c.fetchone()
     conn.close()
     
     if row:
-        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+        if USE_POSTGRES:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+        else:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
     return None
 
 
 def verify_password(username, password):
     """Prüft Passwort und gibt User zurück wenn korrekt und approved"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
+    
+    if USE_POSTGRES:
+        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = %s', (username,))
+    else:
+        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
+    
     row = c.fetchone()
     conn.close()
     
@@ -81,7 +142,10 @@ def verify_password(username, password):
     
     # Passwort-Check
     if bcrypt.checkpw(password.encode('utf-8'), row[2].encode('utf-8')):
-        return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=bool(row[5]), is_approved=bool(row[6]))
+        if USE_POSTGRES:
+            return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=row[5], is_approved=row[6])
+        else:
+            return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=bool(row[5]), is_approved=bool(row[6]))
     
     return None
 
@@ -100,71 +164,104 @@ def create_user(username, password, pfarrei, email=None, is_admin=False, is_appr
     
     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
     try:
-        c.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (?, ?, ?, ?, ?, ?)',
-                  (username, password_hash, pfarrei, email, int(is_admin), int(is_approved)))
+        if USE_POSTGRES:
+            c.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                      (username, password_hash, pfarrei, email, is_admin, is_approved))
+            user_id = c.fetchone()[0]
+        else:
+            c.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (?, ?, ?, ?, ?, ?)',
+                      (username, password_hash, pfarrei, email, int(is_admin), int(is_approved)))
+            user_id = c.lastrowid
+        
         conn.commit()
-        user_id = c.lastrowid
         conn.close()
         return User(id=user_id, username=username, pfarrei=pfarrei, email=email, is_admin=is_admin, is_approved=is_approved)
-    except sqlite3.IntegrityError:
+    except (psycopg2.IntegrityError if USE_POSTGRES else sqlite3.IntegrityError):
         conn.close()
         return None  # Username existiert bereits
 
 
 def get_all_users():
     """Gibt alle Benutzer zurück (für Admin-Dashboard)"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users ORDER BY id DESC')
     rows = c.fetchall()
     conn.close()
     
-    return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5])) for row in rows]
+    if USE_POSTGRES:
+        return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5]) for row in rows]
+    else:
+        return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5])) for row in rows]
 
 
 def approve_user(user_id):
     """Genehmigt einen Benutzer"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('UPDATE users SET is_approved = 1 WHERE id = ?', (user_id,))
+    
+    if USE_POSTGRES:
+        c.execute('UPDATE users SET is_approved = TRUE WHERE id = %s', (user_id,))
+    else:
+        c.execute('UPDATE users SET is_approved = 1 WHERE id = ?', (user_id,))
+    
     conn.commit()
     conn.close()
 
 
 def reject_user(user_id):
     """Löscht einen nicht genehmigten Benutzer"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    
+    if USE_POSTGRES:
+        c.execute('DELETE FROM users WHERE id = %s', (user_id,))
+    else:
+        c.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    
     conn.commit()
     conn.close()
 
 
 def get_user_by_email(email):
     """Lädt User anhand der E-Mail"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE email = ?', (email,))
+    
+    if USE_POSTGRES:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE email = %s', (email,))
+    else:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE email = ?', (email,))
+    
     row = c.fetchone()
     conn.close()
     
     if row:
-        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+        if USE_POSTGRES:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+        else:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
     return None
 
 
 def create_reset_token(user_id):
     """Erstellt einen Reset-Token für einen Benutzer (gültig 1 Stunde)"""
     token = secrets.token_urlsafe(32)
-    expiry = (datetime.now() + timedelta(hours=1)).isoformat()
+    expiry = datetime.now() + timedelta(hours=1)
     
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
-              (token, expiry, user_id))
+    
+    if USE_POSTGRES:
+        c.execute('UPDATE users SET reset_token = %s, reset_token_expiry = %s WHERE id = %s',
+                  (token, expiry, user_id))
+    else:
+        c.execute('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
+                  (token, expiry.isoformat(), user_id))
+    
     conn.commit()
     conn.close()
     
@@ -173,9 +270,14 @@ def create_reset_token(user_id):
 
 def get_user_by_reset_token(token):
     """Lädt User anhand des Reset-Tokens (wenn noch gültig)"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = ?', (token,))
+    
+    if USE_POSTGRES:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = %s', (token,))
+    else:
+        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = ?', (token,))
+    
     row = c.fetchone()
     conn.close()
     
@@ -183,11 +285,18 @@ def get_user_by_reset_token(token):
         return None
     
     # Token-Ablauf prüfen
-    expiry = datetime.fromisoformat(row[6])
+    if USE_POSTGRES:
+        expiry = row[6]
+    else:
+        expiry = datetime.fromisoformat(row[6])
+    
     if datetime.now() > expiry:
         return None  # Token abgelaufen
     
-    return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+    if USE_POSTGRES:
+        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+    else:
+        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
 
 
 def reset_password(user_id, new_password):
@@ -204,10 +313,15 @@ def reset_password(user_id, new_password):
     
     password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
-              (password_hash, user_id))
+    
+    if USE_POSTGRES:
+        c.execute('UPDATE users SET password_hash = %s, reset_token = NULL, reset_token_expiry = NULL WHERE id = %s',
+                  (password_hash, user_id))
+    else:
+        c.execute('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+                  (password_hash, user_id))
+    
     conn.commit()
     conn.close()
-
