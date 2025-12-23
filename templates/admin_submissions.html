@@ -7,39 +7,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
     .submissions-container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 20px auto;
       padding: 20px;
-    }
-    .submission-card {
-      background: white;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      border-left: 4px solid #007bff;
-    }
-    .submission-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #eee;
-    }
-    .submission-meta {
-      font-size: 14px;
-      color: #666;
-    }
-    .submission-data {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 4px;
-      margin-top: 10px;
-      font-family: monospace;
-      font-size: 12px;
-      max-height: 300px;
-      overflow-y: auto;
     }
     .back-btn {
       display: inline-block;
@@ -53,6 +23,33 @@
     .back-btn:hover {
       background: #5a6268;
     }
+    .submissions-table {
+      width: 100%;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      background: #f8f9fa;
+      padding: 12px;
+      text-align: left;
+      font-weight: bold;
+      border-bottom: 2px solid #dee2e6;
+      font-size: 14px;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #dee2e6;
+      font-size: 14px;
+    }
+    tr:hover {
+      background: #f8f9fa;
+    }
     .status-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -61,6 +58,13 @@
       font-weight: bold;
       background: #28a745;
       color: white;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+      background: white;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -72,31 +76,49 @@
   <h1>📋 Eingereichte Zeitaufzeichnungen</h1>
   
   {% if submissions|length == 0 %}
-    <div class="submission-card">
+    <div class="empty-state">
       <p>Keine eingereichten Zeitaufzeichnungen vorhanden.</p>
     </div>
   {% else %}
-    {% for sub in submissions %}
-    <div class="submission-card">
-      <div class="submission-header">
-        <div>
-          <h3 style="margin: 0;">{{ sub.username }} ({{ sub.email }})</h3>
-          <div class="submission-meta">
-            Monat: <strong>{{ sub.month_year }}</strong> | 
-            Eingereicht: {{ sub.submitted_at }}
-          </div>
-        </div>
-        <div>
-          <span class="status-badge">{{ sub.status }}</span>
-        </div>
-      </div>
-      
-      <div class="submission-data">
-        <strong>Formulardaten:</strong>
-        <pre>{{ sub.form_data }}</pre>
-      </div>
+    <div class="submissions-table">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Benutzer</th>
+            <th>E-Mail</th>
+            <th>Monat/Jahr</th>
+            <th>Eingereicht am</th>
+            <th>Status</th>
+            <th>Vorname</th>
+            <th>Nachname</th>
+            <th>Geburtsdatum</th>
+            <th>Pers.-Nr.</th>
+            <th>Einsatzort</th>
+            <th>GKZ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in submissions %}
+          {% set data = sub.form_data|from_json %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><strong>{{ sub.username }}</strong></td>
+            <td>{{ sub.email }}</td>
+            <td><strong>{{ sub.month_year }}</strong></td>
+            <td>{{ sub.submitted_at }}</td>
+            <td><span class="status-badge">{{ sub.status }}</span></td>
+            <td>{{ data.Vorname or '-' }}</td>
+            <td>{{ data.Nachname or '-' }}</td>
+            <td>{{ data.Geburtsdatum or '-' }}</td>
+            <td>{{ data['Pers.-Nr.'] or '-' }}</td>
+            <td>{{ data.Einsatzort or '-' }}</td>
+            <td>{{ data.GKZ or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% endfor %}
   {% endif %}
 </div>
 
