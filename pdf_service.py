@@ -195,6 +195,28 @@ def create_pdf(form_data: dict, output_path: str):
         value = str(value).strip()
         if not value:
             continue
+        
+        # Formatiere Datum als Tag Monat Jahr (z.B. 23 Dezember 2025)
+        if key == "Datum":
+            try:
+                # Versuche verschiedene Eingabeformate
+                if "-" in value and len(value) == 10:  # YYYY-MM-DD
+                    datum_obj = datetime.strptime(value, "%Y-%m-%d")
+                elif "." in value and len(value) == 10:  # DD.MM.YYYY
+                    datum_obj = datetime.strptime(value, "%d.%m.%Y")
+                else:
+                    # Falls kein erkanntes Format, übernehme wie es ist
+                    datum_obj = None
+                
+                if datum_obj:
+                    # Formatiere als "Tag Monat Jahr"
+                    monate = ["Januar", "Februar", "März", "April", "Mai", "Juni",
+                             "Juli", "August", "September", "Oktober", "November", "Dezember"]
+                    value = f"{datum_obj.day} {monate[datum_obj.month - 1]} {datum_obj.year}"
+            except Exception:
+                # Bei Fehler: Datum wie es ist übernehmen
+                pass
+        
         if key in PDF_FIELD_MAP:
             werte_pdf[PDF_FIELD_MAP[key]] = value
 
