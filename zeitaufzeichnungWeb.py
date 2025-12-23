@@ -14,7 +14,7 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
-from users import init_db, init_timerecords_table, init_profile_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord, get_profile, save_profile
+from users import init_db, init_timerecords_table, init_profile_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord, submit_timerecord, get_all_submitted_timerecords, get_profile, save_profile
 import csv
 import json
 
@@ -344,6 +344,29 @@ def api_delete_timerecord(month_year):
         return {"success": True, "message": "Daten gelöscht"}
     except Exception as e:
         return {"success": False, "message": str(e)}, 500
+
+
+@app.route("/api/timerecords/<month_year>/submit", methods=["POST"])
+@login_required
+def api_submit_timerecord(month_year):
+    """Reicht eine Zeitaufzeichnung beim Admin ein"""
+    try:
+        submit_timerecord(current_user.id, month_year)
+        return {"success": True, "message": "Daten an Admin gesendet"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}, 500
+
+
+@app.route("/admin/submissions")
+@login_required
+def admin_submissions():
+    """Zeigt alle eingereichten Zeitaufzeichnungen"""
+    if not current_user.is_admin:
+        flash("❌ Keine Berechtigung.")
+        return redirect(url_for("index"))
+    
+    submissions = get_all_submitted_timerecords()
+    return render_template("admin_submissions.html", submissions=submissions)
 
 
 @app.route("/", methods=["GET", "POST"])

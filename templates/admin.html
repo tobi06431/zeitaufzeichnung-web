@@ -114,7 +114,10 @@
 <div class="admin-container">
   <div class="admin-header">
     <h2>👥 Benutzerverwaltung</h2>
-    <a href="{{ url_for('index') }}" class="btn-back">← Zurück zur Zeitaufzeichnung</a>
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('admin_submissions') }}" class="btn-back" style="background: #007bff;">📋 Eingereichte Daten</a>
+      <a href="{{ url_for('index') }}" class="btn-back">← Zurück zur Zeitaufzeichnung</a>
+    </div>
   </div>
 
   {% with messages = get_flashed_messages() %}

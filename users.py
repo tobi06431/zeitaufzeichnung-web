@@ -95,6 +95,8 @@ def init_timerecords_table():
                 user_id INTEGER NOT NULL,
                 month_year VARCHAR(10) NOT NULL,
                 form_data TEXT NOT NULL,
+                status VARCHAR(20) DEFAULT 'draft',
+                submitted_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -108,6 +110,8 @@ def init_timerecords_table():
                 user_id INTEGER NOT NULL,
                 month_year TEXT NOT NULL,
                 form_data TEXT NOT NULL,
+                status TEXT DEFAULT 'draft',
+                submitted_at TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -116,6 +120,24 @@ def init_timerecords_table():
         ''')
     
     conn.commit()
+    
+    # Migration: Füge status und submitted_at hinzu falls nicht vorhanden
+    try:
+        if USE_POSTGRES:
+            c.execute("ALTER TABLE timerecords ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'draft'")
+            c.execute("ALTER TABLE timerecords ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP")
+        else:
+            c.execute("PRAGMA table_info(timerecords)")
+            columns = [row[1] for row in c.fetchall()]
+            if 'status' not in columns:
+                c.execute("ALTER TABLE timerecords ADD COLUMN status TEXT DEFAULT 'draft'")
+            if 'submitted_at' not in columns:
+                c.execute("ALTER TABLE timerecords ADD COLUMN submitted_at TEXT")
+        conn.commit()
+    except Exception as e:
+        print(f"Migration Warnung: {e}")
+        conn.rollback()
+    
     conn.close()
 
 
@@ -458,6 +480,59 @@ def delete_timerecord(user_id, month_year):
     
     conn.commit()
     conn.close()
+
+
+def submit_timerecord(user_id, month_year):
+    """Markiert eine Zeitaufzeichnung als eingereicht"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''UPDATE timerecords 
+                     SET status = 'submitted', submitted_at = NOW() 
+                     WHERE user_id = %s AND month_year = %s''', (user_id, month_year))
+    else:
+        c.execute('''UPDATE timerecords 
+                     SET status = 'submitted', submitted_at = datetime('now') 
+                     WHERE user_id = ? AND month_year = ?''', (user_id, month_year))
+    
+    conn.commit()
+    conn.close()
+
+
+def get_all_submitted_timerecords():
+    """Lädt alle eingereichten Zeitaufzeichnungen für Admin"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''SELECT tr.id, tr.user_id, u.username, u.email, tr.month_year, 
+                            tr.form_data, tr.submitted_at, tr.status
+                     FROM timerecords tr
+                     JOIN users u ON tr.user_id = u.id
+                     WHERE tr.status = 'submitted'
+                     ORDER BY tr.submitted_at DESC''')
+    else:
+        c.execute('''SELECT tr.id, tr.user_id, u.username, u.email, tr.month_year, 
+                            tr.form_data, tr.submitted_at, tr.status
+                     FROM timerecords tr
+                     JOIN users u ON tr.user_id = u.id
+                     WHERE tr.status = 'submitted'
+                     ORDER BY tr.submitted_at DESC''')
+    
+    rows = c.fetchall()
+    conn.close()
+    
+    return [{
+        "id": row[0],
+        "user_id": row[1],
+        "username": row[2],
+        "email": row[3],
+        "month_year": row[4],
+        "form_data": row[5],
+        "submitted_at": str(row[6]),
+        "status": row[7]
+    } for row in rows]
 
 
 def init_profile_table():
