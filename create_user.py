@@ -14,6 +14,7 @@ def main():
     print("=== Neuen Benutzer erstellen ===\n")
     
     username = input("Benutzername: ").strip()
+    email = input("E-Mail-Adresse (optional): ").strip() or None
     password = input("Passwort: ").strip()
     
     print("\nVerfügbare Pfarreien:")
@@ -38,10 +39,11 @@ def main():
     is_admin = is_admin_input == 'j'
     
     try:
-        user = create_user(username, password, pfarrei, is_admin=is_admin, is_approved=True)
+        user = create_user(username, password, pfarrei, email=email, is_admin=is_admin, is_approved=True)
         
         if user:
             print(f"\n✅ Benutzer '{username}' erfolgreich erstellt!")
+            print(f"   E-Mail: {email or 'Nicht angegeben'}")
             print(f"   Pfarrei: {pfarrei}")
             print(f"   Admin: {'Ja' if is_admin else 'Nein'}")
             print(f"   Status: Genehmigt")

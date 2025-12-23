@@ -12,8 +12,8 @@ import tempfile
 import os
 
 from pdf_service import create_pdf
-from mail_service import send_pdf_mail, send_csv_mail  # <<< Mail-Versand
-from users import init_db, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user
+from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
+from users import init_db, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password
 import csv
 
 app = Flask(__name__)
@@ -80,6 +80,7 @@ def login():
 def register():
     if request.method == "POST":
         username = request.form.get("username")
+        email = request.form.get("email")
         password = request.form.get("password")
         password_confirm = request.form.get("password_confirm")
         pfarrei = request.form.get("pfarrei")
@@ -88,8 +89,12 @@ def register():
             flash("❌ Passwörter stimmen nicht überein.")
             return render_template("register.html")
         
+        if not email:
+            flash("❌ E-Mail-Adresse ist erforderlich.")
+            return render_template("register.html")
+        
         try:
-            user = create_user(username, password, pfarrei, is_admin=False, is_approved=False)
+            user = create_user(username, password, pfarrei, email=email, is_admin=False, is_approved=False)
             if user:
                 flash("✅ Registrierung erfolgreich! Warte auf Freigabe durch einen Administrator.")
                 return redirect(url_for("login"))
@@ -134,6 +139,59 @@ def admin_reject(user_id):
     reject_user(user_id)
     flash("✅ Benutzer wurde abgelehnt und gelöscht.")
     return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("5 per hour")  # Max 5 Passwort-Reset-Anfragen pro Stunde
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email")
+        
+        user = get_user_by_email(email)
+        
+        if user:
+            token = create_reset_token(user.id)
+            reset_url = url_for("reset_password", token=token, _external=True)
+            
+            try:
+                send_reset_mail(email, reset_url)
+                flash("✅ Passwort-Reset-Link wurde an deine E-Mail gesendet.")
+            except Exception as e:
+                flash(f"❌ Fehler beim E-Mail-Versand: {e}")
+        else:
+            # Aus Sicherheitsgründen keine Info, ob E-Mail existiert
+            flash("✅ Falls die E-Mail existiert, wurde ein Reset-Link gesendet.")
+        
+        return redirect(url_for("login"))
+    
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password_route(token):
+    user = get_user_by_reset_token(token)
+    
+    if not user:
+        flash("❌ Ungültiger oder abgelaufener Reset-Link.")
+        return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        password = request.form.get("password")
+        password_confirm = request.form.get("password_confirm")
+        
+        if password != password_confirm:
+            flash("❌ Passwörter stimmen nicht überein.")
+            return render_template("reset_password.html", token=token)
+        
+        try:
+            reset_password(user.id, password)
+            flash("✅ Passwort erfolgreich zurückgesetzt! Du kannst dich jetzt anmelden.")
+            return redirect(url_for("login"))
+        except ValueError as e:
+            flash(f"❌ {e}")
+            return render_template("reset_password.html", token=token)
+    
+    return render_template("reset_password.html", token=token)
 
 
 @app.route("/logout")

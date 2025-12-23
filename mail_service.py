@@ -82,3 +82,40 @@ def send_csv_mail(csv_path: str, recipient: str, filename: str = None):
         server.starttls()
         server.login(smtp_user, smtp_password)
         server.send_message(msg)
+
+
+def send_reset_mail(email: str, reset_url: str):
+    """Sendet E-Mail mit Passwort-Reset-Link"""
+    smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
+    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+
+    smtp_user = _get_env("SMTP_USER")
+    smtp_password = _get_env("SMTP_PASSWORD")
+
+    msg = EmailMessage()
+    msg["Subject"] = "Zeitaufzeichnung – Passwort zurücksetzen"
+    msg["From"] = smtp_user
+    msg["To"] = email
+
+    msg.set_content(
+        f"""Hallo,
+
+du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt.
+
+Klicke auf folgenden Link, um ein neues Passwort zu setzen:
+{reset_url}
+
+Dieser Link ist 1 Stunde gültig.
+
+Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail einfach.
+
+Viele Grüße
+Zeitaufzeichnung Web
+"""
+    )
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+
