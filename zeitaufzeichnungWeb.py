@@ -151,13 +151,20 @@ def forgot_password():
         
         if user:
             token = create_reset_token(user.id)
-            reset_url = url_for("reset_password", token=token, _external=True)
+            reset_url = url_for("reset_password_route", token=token, _external=True)
             
             try:
                 send_reset_mail(email, reset_url)
                 flash("✅ Passwort-Reset-Link wurde an deine E-Mail gesendet.")
             except Exception as e:
-                flash(f"❌ Fehler beim E-Mail-Versand: {e}")
+                # Detaillierte Fehlermeldung für Admins
+                import traceback
+                error_detail = str(e)
+                if "SMTP" in error_detail or "credentials" in error_detail.lower():
+                    flash("❌ E-Mail-Versand nicht konfiguriert. Bitte Administrator kontaktieren.")
+                else:
+                    flash(f"❌ Fehler beim E-Mail-Versand: {error_detail}")
+                print(f"E-Mail-Fehler: {traceback.format_exc()}")  # Log für Render
         else:
             # Aus Sicherheitsgründen keine Info, ob E-Mail existiert
             flash("✅ Falls die E-Mail existiert, wurde ein Reset-Link gesendet.")
