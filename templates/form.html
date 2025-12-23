@@ -368,26 +368,32 @@
   
   // An Admin senden
   async function submitToAdmin() {
-    const monthYear = getCurrentMonthYear();
-    
-    if (!monthYear) {
+    // Hole Monat/Jahr aus dem Formular
+    const monatjahrSelect = document.getElementById('monatjahr_input');
+    if (!monatjahrSelect || !monatjahrSelect.value) {
       alert('❌ Bitte wähle einen Monat/Jahr aus.');
       return;
     }
     
-    if (!confirm(`Möchtest du die Zeitaufzeichnung für ${monthYear} an den Admin senden?`)) {
+    const monthYear = monatjahrSelect.value.replace('/', '-');
+    
+    if (!confirm(`Möchtest du die Zeitaufzeichnung für ${monatjahrSelect.value} an den Admin senden?`)) {
       return;
     }
     
     try {
       // Erst speichern
-      await saveAllFormData();
+      if (typeof saveAllFormData === 'function') {
+        await saveAllFormData();
+      }
       
       // Dann einreichen
+      const csrfToken = document.querySelector('input[name="csrf_token"]').value;
       const response = await fetch(`/api/timerecords/${monthYear}/submit`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
         }
       });
       
@@ -400,7 +406,7 @@
       }
     } catch (error) {
       console.error('❌ Fehler beim Senden:', error);
-      alert('❌ Fehler beim Senden an Admin');
+      alert('❌ Fehler beim Senden an Admin: ' + error.message);
     }
   }
 </script>

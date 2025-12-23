@@ -348,6 +348,7 @@ def api_delete_timerecord(month_year):
 
 @app.route("/api/timerecords/<month_year>/submit", methods=["POST"])
 @login_required
+@csrf.exempt
 def api_submit_timerecord(month_year):
     """Reicht eine Zeitaufzeichnung beim Admin ein"""
     try:
