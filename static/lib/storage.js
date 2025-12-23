@@ -10,12 +10,12 @@ function getCsrfToken() {
   return input ? input.value : '';
 }
 
-// Aktueller Monat/Jahr als Key (z.B. "12/2025")
+// Aktueller Monat/Jahr als Key (z.B. "12-2025")
 function getCurrentMonthYear() {
   const today = new Date();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const year = today.getFullYear();
-  return `${month}/${year}`;
+  return `${month}-${year}`;
 }
 
 // ========== SERVER-BASIERTE SPEICHERUNG ==========
