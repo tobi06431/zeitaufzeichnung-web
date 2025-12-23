@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, render_template, request, send_file, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import date
 import re
 import tempfile
@@ -9,6 +10,7 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail  # <<< Mail-Versand
+from users import init_db, get_user_by_id, get_user_by_username, verify_password
 import csv
 
 app = Flask(__name__)
@@ -16,8 +18,49 @@ app = Flask(__name__)
 # Für Flash-Messages (bei Render später als ENV setzen!)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
 
+# Flask-Login Setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Bitte melde dich an, um fortzufahren.'
+
+# Datenbank initialisieren
+init_db()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return get_user_by_id(int(user_id))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        
+        user = verify_password(username, password)
+        
+        if user:
+            login_user(user)
+            flash(f"✅ Willkommen, {user.username}!")
+            return redirect(url_for("index"))
+        else:
+            flash("❌ Falscher Benutzername oder Passwort.")
+    
+    return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("✅ Du wurdest erfolgreich abgemeldet.")
+    return redirect(url_for("login"))
+
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     if request.method == "POST":
         form_data = dict(request.form)
@@ -159,6 +202,8 @@ def index():
     return render_template(
         "form.html",
         today=date.today().strftime("%d.%m.%Y"),
+        user_pfarrei=current_user.pfarrei,
+        username=current_user.username,
     )
 
 

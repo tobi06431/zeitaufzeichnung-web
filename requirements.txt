@@ -1,1 +1,5 @@
-flaskpypdfgunicorn
+flask
+flask-login
+pypdf
+gunicorn
+bcrypt

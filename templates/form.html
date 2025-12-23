@@ -13,7 +13,13 @@
 <div class="container">
   <div class="card">
 
-    <h2>Zeitaufzeichnung</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2>Zeitaufzeichnung</h2>
+      <div style="text-align: right; font-size: 14px;">
+        <div>👤 {{ username }}</div>
+        <a href="{{ url_for('logout') }}" style="color: #dc3545; text-decoration: none;">Abmelden</a>
+      </div>
+    </div>
 
     <!-- ✅ Flash-Messages (Erfolg / Fehler) -->
     {% with messages = get_flashed_messages() %}
@@ -39,11 +45,11 @@
 
           <label>Kath. Kirchengemeinde</label>
           <select name="Kath. Kirchengemeinde" id="kirchengemeinde_input">
-            <option value="">-- auswählen --</option>
-            <option value="Heilige Katharina Kaspar Limburger Land">Heilige Katharina Kaspar Limburger Land</option>
-            <option value="St. Peter und Paul Bad Camberg">St. Peter und Paul Bad Camberg</option>
-            <option value="Heilig Geist Goldener Grund">Heilig Geist Goldener Grund</option>
+            <option value="{{ user_pfarrei }}" selected>{{ user_pfarrei }}</option>
           </select>
+          <small style="color: #666; display: block; margin-top: 5px;">
+            Automatisch auf deine Pfarrei gesetzt
+          </small>
 
         </div>
       </div>
