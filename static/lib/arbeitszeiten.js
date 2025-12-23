@@ -77,7 +77,7 @@ function removeArbeitszeit(i) {
 function clearArbeitszeiten() {
   if (!confirm("Alle Arbeitszeiten dieser Aufzeichnung löschen?")) return;
   arbeitszeiten = [];
-  localStorage.removeItem(currentAZStorageKey);
+  saveArbeitszeiten(); // Speichert leere Liste (wichtig für Sync!)
   updateAZListe();
 }
 

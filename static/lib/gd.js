@@ -84,7 +84,7 @@ function removeGottesdienst(i) {
 function clearGottesdienste() {
   if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
   gottesdienste = [];
-  localStorage.removeItem(currentStorageKey);
+  saveGottesdienste(); // Speichert leere Liste (wichtig für Sync!)
   updateListe();
 }
 
