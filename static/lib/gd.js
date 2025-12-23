@@ -13,6 +13,8 @@ function getStorageKey() {
 function saveGottesdienste() {
   if (currentStorageKey) {
     localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
+    // Trigger Server-Sync
+    window.triggerSave && window.triggerSave();
   }
 }
 

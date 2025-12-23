@@ -31,6 +31,34 @@ async function saveAllFormData() {
     }
   });
   
+  // WICHTIG: Auch die gespeicherten Listen (Gottesdienste & Arbeitszeiten) übertragen
+  const storageKey = window.getStorageKey ? window.getStorageKey() : '';
+  if (storageKey) {
+    const gottesdiensteData = localStorage.getItem(storageKey);
+    if (gottesdiensteData) {
+      formData['_gottesdienste_list'] = gottesdiensteData;
+    }
+  }
+  
+  const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
+  if (azKey) {
+    const arbeitszeitenData = localStorage.getItem(azKey);
+    if (arbeitszeitenData) {
+      formData['_arbeitszeiten_list'] = arbeitszeitenData;
+    }
+  }
+  
+  // Times-Map auch speichern
+  const timesKey = getTimesStorageKey();
+  if (timesKey) {
+    const timesData = localStorage.getItem(timesKey);
+    if (timesData) {
+      formData['_times_map'] = timesData;
+    }
+  }
+  
+  console.log('💾 Speichere Daten:', { monthYear, fieldCount: Object.keys(formData).length });
+  
   try {
     const response = await fetch(`/api/timerecords/${monthYear}`, {
       method: 'POST',
@@ -44,16 +72,20 @@ async function saveAllFormData() {
     });
     
     const result = await response.json();
-    if (!result.success) {
-      console.error('Fehler beim Speichern:', result.message);
+    if (result.success) {
+      console.log('✅ Daten gespeichert');
+    } else {
+      console.error('❌ Fehler beim Speichern:', result.message);
     }
   } catch (error) {
-    console.error('Speichern fehlgeschlagen:', error);
+    console.error('❌ Speichern fehlgeschlagen:', error);
   }
 }
 
 async function loadAllFormData() {
   const monthYear = getCurrentMonthYear();
+  
+  console.log('📥 Lade Daten für:', monthYear);
   
   try {
     const response = await fetch(`/api/timerecords/${monthYear}`);
@@ -62,8 +94,45 @@ async function loadAllFormData() {
     if (result.success && result.record) {
       const formData = JSON.parse(result.record.form_data);
       
+      console.log('✅ Daten geladen:', { fieldCount: Object.keys(formData).length });
+      
       // Formulardaten wiederherstellen
       Object.keys(formData).forEach(name => {
+        // Spezielle Listen-Daten zurück in LocalStorage
+        if (name === '_gottesdienste_list') {
+          const storageKey = window.getStorageKey ? window.getStorageKey() : '';
+          if (storageKey) {
+            localStorage.setItem(storageKey, formData[name]);
+            console.log('✅ Gottesdienste wiederhergestellt');
+            // Listen neu laden
+            window.loadGottesdienste && window.loadGottesdienste();
+            window.updateListe && window.updateListe();
+          }
+          return;
+        }
+        
+        if (name === '_arbeitszeiten_list') {
+          const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
+          if (azKey) {
+            localStorage.setItem(azKey, formData[name]);
+            console.log('✅ Arbeitszeiten wiederhergestellt');
+            // Listen neu laden
+            window.loadArbeitszeiten && window.loadArbeitszeiten();
+            window.updateAZListe && window.updateAZListe();
+          }
+          return;
+        }
+        
+        if (name === '_times_map') {
+          const timesKey = getTimesStorageKey();
+          if (timesKey) {
+            localStorage.setItem(timesKey, formData[name]);
+            console.log('✅ Times-Map wiederhergestellt');
+          }
+          return;
+        }
+        
+        // Normale Formularfelder
         const el = document.querySelector(`[name="${name}"]`);
         if (el) {
           el.value = formData[name];
@@ -71,9 +140,11 @@ async function loadAllFormData() {
       });
       
       return true;
+    } else {
+      console.log('ℹ️ Keine gespeicherten Daten gefunden');
     }
   } catch (error) {
-    console.error('Laden fehlgeschlagen:', error);
+    console.error('❌ Laden fehlgeschlagen:', error);
   }
   
   return false;

@@ -13,6 +13,8 @@ function getAZStorageKey() {
 function saveArbeitszeiten() {
   if (currentAZStorageKey) {
     localStorage.setItem(currentAZStorageKey, JSON.stringify(arbeitszeiten));
+    // Trigger Server-Sync
+    window.triggerSave && window.triggerSave();
   }
 }
 
