@@ -367,6 +367,14 @@ def admin_submissions():
         return redirect(url_for("index"))
     
     submissions = get_all_submitted_timerecords()
+    
+    # Parse JSON form_data für jede Submission
+    for sub in submissions:
+        try:
+            sub['form_data_parsed'] = json.loads(sub['form_data'])
+        except:
+            sub['form_data_parsed'] = {}
+    
     return render_template("admin_submissions.html", submissions=submissions)
 
 

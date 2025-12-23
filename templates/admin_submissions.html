@@ -100,7 +100,7 @@
         </thead>
         <tbody>
           {% for sub in submissions %}
-          {% set data = sub.form_data|from_json %}
+          {% set data = sub.form_data_parsed %}
           <tr>
             <td>{{ loop.index }}</td>
             <td><strong>{{ sub.username }}</strong></td>
