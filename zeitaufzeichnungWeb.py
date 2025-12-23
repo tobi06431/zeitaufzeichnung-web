@@ -13,7 +13,7 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail  # <<< Mail-Versand
-from users import init_db, get_user_by_id, get_user_by_username, verify_password
+from users import init_db, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user
 import csv
 
 app = Flask(__name__)
@@ -63,6 +63,9 @@ def login():
         user = verify_password(username, password)
         
         if user:
+            if not user.is_approved:
+                flash("❌ Dein Account wartet noch auf Freigabe durch einen Administrator.")
+                return render_template("login.html")
             login_user(user)
             flash(f"✅ Willkommen, {user.username}!")
             return redirect(url_for("index"))
@@ -70,6 +73,67 @@ def login():
             flash("❌ Falscher Benutzername oder Passwort.")
     
     return render_template("login.html")
+
+
+@app.route("/register", methods=["GET", "POST"])
+@limiter.limit("3 per hour")  # Max 3 Registrierungen pro Stunde
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        password_confirm = request.form.get("password_confirm")
+        pfarrei = request.form.get("pfarrei")
+        
+        if password != password_confirm:
+            flash("❌ Passwörter stimmen nicht überein.")
+            return render_template("register.html")
+        
+        try:
+            user = create_user(username, password, pfarrei, is_admin=False, is_approved=False)
+            if user:
+                flash("✅ Registrierung erfolgreich! Warte auf Freigabe durch einen Administrator.")
+                return redirect(url_for("login"))
+            else:
+                flash("❌ Benutzername existiert bereits.")
+        except ValueError as e:
+            flash(f"❌ {e}")
+    
+    return render_template("register.html")
+
+
+@app.route("/admin")
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash("❌ Keine Berechtigung.")
+        return redirect(url_for("index"))
+    
+    users = get_all_users()
+    return render_template("admin.html", users=users)
+
+
+@app.route("/admin/approve/<int:user_id>", methods=["POST"])
+@login_required
+def admin_approve(user_id):
+    if not current_user.is_admin:
+        flash("❌ Keine Berechtigung.")
+        return redirect(url_for("index"))
+    
+    approve_user(user_id)
+    flash("✅ Benutzer wurde genehmigt.")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/reject/<int:user_id>", methods=["POST"])
+@login_required
+def admin_reject(user_id):
+    if not current_user.is_admin:
+        flash("❌ Keine Berechtigung.")
+        return redirect(url_for("index"))
+    
+    reject_user(user_id)
+    flash("✅ Benutzer wurde abgelehnt und gelöscht.")
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route("/logout")

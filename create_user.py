@@ -34,12 +34,17 @@ def main():
     else:
         pfarrei = input("Pfarrei-Name eingeben: ").strip()
     
+    is_admin_input = input("\nAdmin-Rechte vergeben? (j/n): ").strip().lower()
+    is_admin = is_admin_input == 'j'
+    
     try:
-        user = create_user(username, password, pfarrei)
+        user = create_user(username, password, pfarrei, is_admin=is_admin, is_approved=True)
         
         if user:
             print(f"\n✅ Benutzer '{username}' erfolgreich erstellt!")
             print(f"   Pfarrei: {pfarrei}")
+            print(f"   Admin: {'Ja' if is_admin else 'Nein'}")
+            print(f"   Status: Genehmigt")
         else:
             print(f"\n❌ Fehler: Benutzer '{username}' existiert bereits.")
     except ValueError as e:

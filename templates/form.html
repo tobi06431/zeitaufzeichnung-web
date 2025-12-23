@@ -17,7 +17,10 @@
       <h2>Zeitaufzeichnung</h2>
       <div style="text-align: right; font-size: 14px;">
         <div>👤 {{ username }}</div>
-        <a href="{{ url_for('logout') }}" style="color: #dc3545; text-decoration: none;">Abmelden</a>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('admin_dashboard') }}" style="color: #007bff; text-decoration: none; display: block; margin-top: 5px;">⚙️ Admin</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" style="color: #dc3545; text-decoration: none; display: block; margin-top: 5px;">Abmelden</a>
       </div>
     </div>
 
