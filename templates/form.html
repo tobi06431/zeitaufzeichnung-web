@@ -4,39 +4,71 @@
   <meta charset="UTF-8">
   <title>Zeitaufzeichnung</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
+<!-- Modern Header -->
+<header class="site-header">
+  <div class="site-header__container">
+    <a href="{{ url_for('index') }}" class="site-header__logo">
+      <span class="site-header__icon">⏱️</span>
+      <span>Zeitaufzeichnung</span>
+    </a>
+    
+    <button class="mobile-menu-toggle" aria-label="Menü" aria-expanded="false">
+      ☰
+    </button>
+    
+    <nav class="site-header__nav">
+      <div class="user-dropdown">
+        <button class="user-dropdown__trigger" aria-expanded="false">
+          <span>👤 {{ username }}</span>
+          <span>▼</span>
+        </button>
+        <div class="user-dropdown__menu">
+          {% if current_user.is_admin %}
+          <a href="{{ url_for('admin_dashboard') }}" class="user-dropdown__item">
+            <span>⚙️</span>
+            <span>Admin-Bereich</span>
+          </a>
+          {% endif %}
+          <a href="{{ url_for('profile') }}" class="user-dropdown__item">
+            <span>👤</span>
+            <span>Mein Profil</span>
+          </a>
+          <a href="{{ url_for('account_export') }}" class="user-dropdown__item">
+            <span>📥</span>
+            <span>Daten exportieren</span>
+          </a>
+          <a href="{{ url_for('account_delete') }}" class="user-dropdown__item user-dropdown__item--danger">
+            <span>🗑️</span>
+            <span>Account löschen</span>
+          </a>
+          <a href="{{ url_for('logout') }}" class="user-dropdown__item">
+            <span>🚪</span>
+            <span>Abmelden</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for message in messages %}
+        <div class="flash">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
 <div class="container">
   <div class="card">
-
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2>Zeitaufzeichnung</h2>
-      <div style="text-align: right; font-size: 14px;">
-        <div>👤 {{ username }}</div>
-        {% if current_user.is_admin %}
-        <a href="{{ url_for('admin_dashboard') }}" style="color: #007bff; text-decoration: none; display: block; margin-top: 5px;">⚙️ Admin</a>
-        {% endif %}
-        <a href="{{ url_for('profile') }}" style="color: #6c757d; text-decoration: none; display: block; margin-top: 5px;">👤 Profil</a>
-        <a href="{{ url_for('account_export') }}" style="color: #28a745; text-decoration: none; display: block; margin-top: 5px;">📥 Daten exportieren</a>
-        <a href="{{ url_for('account_delete') }}" style="color: #ffc107; text-decoration: none; display: block; margin-top: 5px;">🗑️ Account löschen</a>
-        <a href="{{ url_for('logout') }}" style="color: #dc3545; text-decoration: none; display: block; margin-top: 5px;">Abmelden</a>
-      </div>
-    </div>
-
-    <!-- ✅ Flash-Messages (Erfolg / Fehler) -->
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash-wrap">
-          {% for message in messages %}
-            <div class="flash">{{ message }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
 
     <form method="post">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -416,6 +448,7 @@
 <script src="{{ url_for('static', filename='lib/gd.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/arbeitszeiten.js') }}"></script>
 <script src="{{ url_for('static', filename='app.init.js') }}"></script>
+<script src="{{ url_for('static', filename='ui-components.js') }}"></script>
 
 </body>
 </html>
