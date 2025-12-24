@@ -1,6 +1,7 @@
 /**
  * UI Components & Interactions
  * Handles: User Dropdown, Mobile Menu, Flash Messages, Loading States
+ * Note: Panel collapse functionality is in lib/ui.js to avoid conflicts
  */
 
 // ================= USER DROPDOWN =================
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   trigger.addEventListener('click', function(e) {
     e.stopPropagation();
+    e.preventDefault(); // Prevent any default behavior
     const isOpen = menu.classList.contains('user-dropdown__menu--open');
     
     if (isOpen) {
@@ -58,7 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (!toggle || !nav) return;
   
-  toggle.addEventListener('click', function() {
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
     const isOpen = nav.classList.contains('site-header__nav--open');
     
     if (isOpen) {
@@ -141,15 +144,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ================= SMOOTH SCROLL =================
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    const target = document.querySelector(this.getAttribute('href'));
-    if (target) {
-      e.preventDefault();
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
+// Only apply to valid anchor links (not #)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href^="#"]:not([href="#"])').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    });
   });
 });
