@@ -14,7 +14,7 @@ import os
 
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
-from users import init_db, init_timerecords_table, init_profile_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord, submit_timerecord, get_all_submitted_timerecords, get_profile, save_profile
+from users import init_db, init_timerecords_table, init_submissions_table, init_profile_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord, submit_timerecord, get_all_submitted_timerecords, get_profile, save_profile
 import csv
 import json
 
@@ -49,6 +49,7 @@ login_manager.login_message = 'Bitte melde dich an, um fortzufahren.'
 # Datenbank initialisieren
 init_db()
 init_timerecords_table()
+init_submissions_table()
 init_profile_table()
 
 
@@ -372,11 +373,9 @@ def api_submit_timerecord(month_year):
         form_data['Einsatzort'] = profile_data.get('einsatzort', '')
         form_data['GKZ'] = profile_data.get('gkz', '')
         
-        # Speichere die aktualisierten Daten zurück
-        save_timerecord(current_user.id, month_year, json.dumps(form_data))
+        # Erstelle neue Submission (wird nicht überschrieben)
+        submit_timerecord(current_user.id, month_year, json.dumps(form_data))
         
-        # Markiere als eingereicht
-        submit_timerecord(current_user.id, month_year)
         return {"success": True, "message": "Daten an Admin gesendet"}
     except Exception as e:
         return {"success": False, "message": str(e)}, 500

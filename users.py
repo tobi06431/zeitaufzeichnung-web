@@ -141,6 +141,38 @@ def init_timerecords_table():
     conn.close()
 
 
+def init_submissions_table():
+    """Erstellt die Submissions-Tabelle für eingereichte Zeitaufzeichnungen"""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if USE_POSTGRES:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS submissions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                month_year VARCHAR(10) NOT NULL,
+                form_data TEXT NOT NULL,
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS submissions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                month_year TEXT NOT NULL,
+                form_data TEXT NOT NULL,
+                submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+    
+    conn.commit()
+    conn.close()
+
+
 def get_user_by_id(user_id):
     """Lädt User anhand der ID"""
     conn = get_db_connection()
@@ -482,19 +514,17 @@ def delete_timerecord(user_id, month_year):
     conn.close()
 
 
-def submit_timerecord(user_id, month_year):
-    """Markiert eine Zeitaufzeichnung als eingereicht"""
+def submit_timerecord(user_id, month_year, form_data):
+    """Erstellt eine neue Submission (Einreichung)"""
     conn = get_db_connection()
     c = conn.cursor()
     
     if USE_POSTGRES:
-        c.execute('''UPDATE timerecords 
-                     SET status = 'submitted', submitted_at = NOW() 
-                     WHERE user_id = %s AND month_year = %s''', (user_id, month_year))
+        c.execute('''INSERT INTO submissions (user_id, month_year, form_data, submitted_at) 
+                     VALUES (%s, %s, %s, NOW())''', (user_id, month_year, form_data))
     else:
-        c.execute('''UPDATE timerecords 
-                     SET status = 'submitted', submitted_at = datetime('now') 
-                     WHERE user_id = ? AND month_year = ?''', (user_id, month_year))
+        c.execute('''INSERT INTO submissions (user_id, month_year, form_data, submitted_at) 
+                     VALUES (?, ?, ?, datetime('now'))''', (user_id, month_year, form_data))
     
     conn.commit()
     conn.close()
@@ -506,19 +536,17 @@ def get_all_submitted_timerecords():
     c = conn.cursor()
     
     if USE_POSTGRES:
-        c.execute('''SELECT tr.id, tr.user_id, u.username, u.email, tr.month_year, 
-                            tr.form_data, tr.submitted_at, tr.status
-                     FROM timerecords tr
-                     JOIN users u ON tr.user_id = u.id
-                     WHERE tr.status = 'submitted'
-                     ORDER BY tr.submitted_at DESC''')
+        c.execute('''SELECT s.id, s.user_id, u.username, u.email, s.month_year, 
+                            s.form_data, s.submitted_at
+                     FROM submissions s
+                     JOIN users u ON s.user_id = u.id
+                     ORDER BY s.submitted_at DESC''')
     else:
-        c.execute('''SELECT tr.id, tr.user_id, u.username, u.email, tr.month_year, 
-                            tr.form_data, tr.submitted_at, tr.status
-                     FROM timerecords tr
-                     JOIN users u ON tr.user_id = u.id
-                     WHERE tr.status = 'submitted'
-                     ORDER BY tr.submitted_at DESC''')
+        c.execute('''SELECT s.id, s.user_id, u.username, u.email, s.month_year, 
+                            s.form_data, s.submitted_at
+                     FROM submissions s
+                     JOIN users u ON s.user_id = u.id
+                     ORDER BY s.submitted_at DESC''')
     
     rows = c.fetchall()
     conn.close()
@@ -530,8 +558,7 @@ def get_all_submitted_timerecords():
         "email": row[3],
         "month_year": row[4],
         "form_data": row[5],
-        "submitted_at": str(row[6]),
-        "status": row[7]
+        "submitted_at": str(row[6])
     } for row in rows]
 
 
