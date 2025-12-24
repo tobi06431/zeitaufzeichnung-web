@@ -458,12 +458,38 @@ input:hover:not(:focus), select:hover:not(:focus), textarea:hover:not(:focus) {
   background: var(--surface);
   overflow: hidden;
 }
+
 .panel__header{
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding: 12px 14px;
   background: linear-gradient(180deg, rgba(0,0,0,0.02), transparent);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.panel__title{ 
+  font-weight: 700; 
+}
+
+.panel__toggle{
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--primary);
+  padding: 6px 8px;
+}
+
+.panel__content{ 
+  padding: 14px; 
+}
+
+.panel.collapsed .panel__content{ 
+  display: none; 
+}
+
 /* ================= MODERN FLASH MESSAGES ================= */
 .flash-wrap {
   position: fixed;
@@ -551,10 +577,8 @@ input:hover:not(:focus), select:hover:not(:focus), textarea:hover:not(:focus) {
     left: 20px;
     right: 20px;
     max-width: none;
-  };
+  }
 }
-.panel__content{ padding: 14px; }
-.panel.collapsed .panel__content{ display: none; }
 
 /* Mobile / touch improvements */
 @media (max-width: 768px){
