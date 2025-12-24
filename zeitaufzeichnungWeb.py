@@ -352,6 +352,27 @@ def api_delete_timerecord(month_year):
 def api_submit_timerecord(month_year):
     """Reicht eine Zeitaufzeichnung beim Admin ein"""
     try:
+        # Lade die gespeicherten Formulardaten
+        timerecord = get_timerecord(current_user.id, month_year)
+        if not timerecord:
+            return {"success": False, "message": "Keine Daten für diesen Monat gefunden"}, 404
+        
+        # Lade Profildaten und füge sie zu den Formulardaten hinzu
+        profile_data = get_profile(current_user.id)
+        form_data = json.loads(timerecord['form_data'])
+        
+        # Füge Profildaten hinzu
+        form_data['Vorname'] = profile_data.get('vorname', '')
+        form_data['Nachname'] = profile_data.get('nachname', '')
+        form_data['Geburtsdatum'] = profile_data.get('geburtsdatum', '')
+        form_data['Pers.-Nr.'] = profile_data.get('personalnummer', '')
+        form_data['Einsatzort'] = profile_data.get('einsatzort', '')
+        form_data['GKZ'] = profile_data.get('gkz', '')
+        
+        # Speichere die aktualisierten Daten zurück
+        save_timerecord(current_user.id, month_year, json.dumps(form_data))
+        
+        # Markiere als eingereicht
         submit_timerecord(current_user.id, month_year)
         return {"success": True, "message": "Daten an Admin gesendet"}
     except Exception as e:
