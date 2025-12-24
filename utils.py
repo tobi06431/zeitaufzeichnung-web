@@ -8,7 +8,7 @@ import re
 from datetime import date
 
 
-def generate_filename(data, file_extension='pdf'):
+def generate_filename(data: dict, file_extension: str = 'pdf') -> str:
     """
     Generiert standardisierten Dateinamen aus Formulardaten.
     
@@ -56,7 +56,7 @@ def generate_filename(data, file_extension='pdf'):
     return f"{nachname},{vorname},{jahr},{monat}.{file_extension}"
 
 
-def format_date_german(date_str):
+def format_date_german(date_str: str) -> str:
     """
     Konvertiert ISO-Datum zu deutschem Format.
     

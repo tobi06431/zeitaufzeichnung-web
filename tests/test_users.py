@@ -91,13 +91,132 @@ class TestDatabaseIntegration:
     """
     Integrations-Tests für Datenbankfunktionen
     
-    WICHTIG: Diese Tests erfordern eine frische Datenbank!
-    Ausführen mit: rm -f zeitaufzeichnung.db && pytest tests/ -k TestDatabase
+    Diese Tests verwenden eine temporäre SQLite-Datenbank
     """
     
-    def test_placeholder(self):
-        """Platzhalter-Test (TODO: echte DB-Tests mit Fixtures)"""
-        # Diese Tests wurden bewusst als Platzhalter belassen, da die
+    @pytest.fixture
+    def temp_db(self, monkeypatch, tmp_path):
+        """Erstellt temporäre Test-Datenbank"""
+        db_path = tmp_path / "test_users.db"
+        monkeypatch.setenv('DATABASE_URL', '')
+        
+        # Import users module to initialize with our test DB
+        import users
+        monkeypatch.setattr(users, 'DATABASE', str(db_path))
+        monkeypatch.setattr(users, 'USE_POSTGRES', False)
+        
+        # Initialize tables
+        users.init_db()
+        users.init_timerecords_table()
+        users.init_submissions_table()
+        users.init_profile_table()
+        
+        yield db_path
+        
+        # Cleanup
+        if db_path.exists():
+            db_path.unlink()
+    
+    def test_create_and_get_user(self, temp_db):
+        """Test: Benutzer erstellen und abrufen"""
+        from users import create_user, get_user_by_username, get_user_by_email
+        
+        user = create_user("testuser", "securepass123", "Test Pfarrei", 
+                          email="test@example.com", is_admin=False)
+        
+        assert user is not None
+        assert user.username == "testuser"
+        assert user.pfarrei == "Test Pfarrei"
+        assert user.email == "test@example.com"
+        assert user.is_approved == False
+        
+        # Test get by username
+        retrieved = get_user_by_username("testuser")
+        assert retrieved is not None
+        assert retrieved.username == "testuser"
+        
+        # Test get by email
+        retrieved_by_email = get_user_by_email("test@example.com")
+        assert retrieved_by_email is not None
+        assert retrieved_by_email.email == "test@example.com"
+    
+    def test_verify_password(self, temp_db):
+        """Test: Passwort-Verifikation"""
+        from users import create_user, verify_password
+        
+        user = create_user("pwtest", "mypassword", "Test Pfarrei", 
+                          email="pw@test.com")
+        
+        # Korrektes Passwort
+        assert verify_password(user, "mypassword") == True
+        
+        # Falsches Passwort
+        assert verify_password(user, "wrongpassword") == False
+    
+    def test_approve_user(self, temp_db):
+        """Test: Benutzer-Freigabe"""
+        from users import create_user, approve_user, get_user_by_id
+        
+        user = create_user("approvetest", "pass", "Test Pfarrei",
+                          email="approve@test.com", is_approved=False)
+        
+        assert user.is_approved == False
+        
+        approve_user(user.id)
+        
+        updated_user = get_user_by_id(user.id)
+        assert updated_user.is_approved == True
+    
+    def test_password_reset_token(self, temp_db):
+        """Test: Passwort-Reset-Token"""
+        from users import create_user, create_reset_token, get_user_by_reset_token, reset_password
+        
+        user = create_user("resettest", "oldpassword", "Test Pfarrei",
+                          email="reset@test.com", is_approved=True)
+        
+        # Token erstellen
+        token = create_reset_token(user.id)
+        assert token is not None
+        assert len(token) > 20  # Token sollte lang genug sein
+        
+        # User mit Token abrufen
+        user_from_token = get_user_by_reset_token(token)
+        assert user_from_token is not None
+        assert user_from_token.id == user.id
+        
+        # Passwort zurücksetzen
+        reset_password(user.id, "newpassword123")
+        
+        # Token sollte danach ungültig sein
+        assert get_user_by_reset_token(token) is None
+    
+    def test_profile_management(self, temp_db):
+        """Test: Profilverwaltung"""
+        from users import create_user, save_profile, get_profile
+        
+        user = create_user("profiletest", "pass", "Test Pfarrei",
+                          email="profile@test.com", is_approved=True)
+        
+        # Profil speichern
+        save_profile(user.id, "Max", "Mustermann", "01.01.1990", 
+                    "12345", "Testort", "GKZ123")
+        
+        # Profil abrufen
+        profile = get_profile(user.id)
+        assert profile['vorname'] == "Max"
+        assert profile['nachname'] == "Mustermann"
+        assert profile['geburtsdatum'] == "01.01.1990"
+        assert profile['personalnummer'] == "12345"
+        assert profile['einsatzort'] == "Testort"
+        assert profile['gkz'] == "GKZ123"
+        
+        # Profil aktualisieren
+        save_profile(user.id, "Max", "Müller", "01.01.1990",
+                    "12345", "Neuer Ort", "GKZ456")
+        
+        updated_profile = get_profile(user.id)
+        assert updated_profile['nachname'] == "Müller"
+        assert updated_profile['einsatzort'] == "Neuer Ort"
         # Datenbankverbindung beim Import initialisiert wird und nicht
         # einfach pro Test zurückgesetzt werden kann.
         #

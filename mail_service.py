@@ -10,7 +10,7 @@ def _get_env(name: str) -> str:
     return value
 
 
-def send_pdf_mail(pdf_path: str, recipient: str, filename: str = None):
+def send_pdf_mail(pdf_path: str, recipient: str, filename: str = None) -> None:
     smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
     smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
 
@@ -47,7 +47,7 @@ def send_pdf_mail(pdf_path: str, recipient: str, filename: str = None):
         server.send_message(msg)
 
 
-def send_csv_mail(csv_path: str, recipient: str, filename: str = None):
+def send_csv_mail(csv_path: str, recipient: str, filename: str = None) -> None:
     smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
     smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
 
@@ -84,7 +84,7 @@ def send_csv_mail(csv_path: str, recipient: str, filename: str = None):
         server.send_message(msg)
 
 
-def send_reset_mail(email: str, reset_url: str):
+def send_reset_mail(email: str, reset_url: str) -> None:
     """Sendet E-Mail mit Passwort-Reset-Link"""
     smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
     smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())

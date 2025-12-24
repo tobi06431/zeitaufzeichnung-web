@@ -25,8 +25,9 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # Logging konfigurieren
+log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, log_level, logging.INFO),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),  # Console output
@@ -442,32 +443,15 @@ def index():
                 writer.writerow([request.form.get(k, '') for k in fields])
                 tmp.close()
 
-                # build filename similar to PDF naming but with .csv
-                def _make_csv_filename(data):
-                    ln = (data.get('Nachname') or '').strip().upper().replace(' ', '_')
-                    fn = (data.get('Vorname') or '').strip().upper().replace(' ', '_')
-                    mj = (data.get('Monat/Jahr') or '').strip()
-                    m = None; y = None
-                    mobj = re.match(r'^(\d{2})\/(\d{4})$', mj)
-                    if mobj:
-                        m = mobj.group(1)
-                        y = mobj.group(2)
-                    else:
-                        today = date.today()
-                        m = f"{today.month:02d}"
-                        y = f"{today.year}"
+                # Nutze generate_filename aus utils für konsistente Benennung
+                csv_filename = generate_filename(form_data, 'csv')
 
-                    def _clean(s):
-                        return re.sub(r'[^A-Z0-9_,\-\.]', '_', s)
-
-                    ln = _clean(ln) or 'UNKNOWN'
-                    fn = _clean(fn) or 'UNKNOWN'
-
-                    return f"{ln},{fn},{y},{m}.csv"
-
-                csv_filename = _make_csv_filename(form_data)
-
-                send_csv_mail(csv_path=tmp.name, recipient=os.environ.get("MAIL_TO", "tobi06431@gmail.com"), filename=csv_filename)
+                mail_to = os.environ.get("MAIL_TO")
+                if not mail_to:
+                    logger.warning("MAIL_TO nicht gesetzt - CSV-Versand fehlgeschlagen")
+                    flash("❌ E-Mail-Konfiguration fehlt. Bitte Administrator kontaktieren.")
+                    return redirect(url_for("index"))
+                send_csv_mail(csv_path=tmp.name, recipient=mail_to, filename=csv_filename)
                 try:
                     os.remove(tmp.name)
                 except OSError:
@@ -499,9 +483,14 @@ def index():
 
             # 👉 Wurde der Mail-Button gedrückt?
             if form_data.get("action") == "send_mail":
+                mail_to = os.environ.get("MAIL_TO")
+                if not mail_to:
+                    logger.warning("MAIL_TO nicht gesetzt - PDF-Versand fehlgeschlagen")
+                    flash("❌ E-Mail-Konfiguration fehlt. Bitte Administrator kontaktieren.")
+                    return redirect(url_for("index"))
                 send_pdf_mail(
                     pdf_path=tmp.name,
-                    recipient=os.environ.get("MAIL_TO", "tobi06431@gmail.com"),
+                    recipient=mail_to,
                     filename=pdf_filename,
                 )
 
@@ -550,4 +539,6 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Debug-Mode nur in Entwicklung aktivieren
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() in ('true', '1', 'yes')
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
