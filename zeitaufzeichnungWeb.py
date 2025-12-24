@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 from flask import Flask, render_template, request, send_file, redirect, url_for, flash, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
@@ -15,10 +16,23 @@ import os
 from pdf_service import create_pdf
 from mail_service import send_pdf_mail, send_csv_mail, send_reset_mail
 from users import init_db, init_timerecords_table, init_submissions_table, init_profile_table, get_user_by_id, get_user_by_username, verify_password, create_user, get_all_users, approve_user, reject_user, get_user_by_email, create_reset_token, get_user_by_reset_token, reset_password, delete_user_account, save_timerecord, get_timerecord, get_all_timerecords, delete_timerecord, submit_timerecord, get_all_submitted_timerecords, get_profile, save_profile
+from utils import generate_filename
 import csv
 import json
 
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
+
+# Logging konfigurieren
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+        logging.FileHandler('app.log') if not os.environ.get('RENDER') else logging.StreamHandler()
+    ]
+)
 
 # Für Flash-Messages (bei Render später als ENV setzen!)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
@@ -182,7 +196,7 @@ def forgot_password():
                     flash("❌ E-Mail-Versand nicht konfiguriert. Bitte Administrator kontaktieren.")
                 else:
                     flash(f"❌ Fehler beim E-Mail-Versand: {error_detail}")
-                print(f"E-Mail-Fehler: {traceback.format_exc()}")  # Log für Render
+                logger.error(f"E-Mail-Fehler: {traceback.format_exc()}")
         else:
             # Aus Sicherheitsgründen keine Info, ob E-Mail existiert
             flash("✅ Falls die E-Mail existiert, wurde ein Reset-Link gesendet.")
@@ -480,31 +494,8 @@ def index():
         try:
             create_pdf(form_data, tmp.name)
 
-            # build desired filename: NACHNAME,VORNAME,JAHR,MONAT
-            def _make_pdf_filename(data):
-                ln = (data.get('Nachname') or '').strip().upper().replace(' ', '_')
-                fn = (data.get('Vorname') or '').strip().upper().replace(' ', '_')
-                mj = (data.get('Monat/Jahr') or '').strip()
-                m = None; y = None
-                mobj = re.match(r'^(\d{2})\/(\d{4})$', mj)
-                if mobj:
-                    m = mobj.group(1)
-                    y = mobj.group(2)
-                else:
-                    today = date.today()
-                    m = f"{today.month:02d}"
-                    y = f"{today.year}"
-
-                # sanitize simple: allow A-Z0-9,_ and commas (we already uppercased and replaced spaces)
-                def _clean(s):
-                    return re.sub(r'[^A-Z0-9_,\-\.]', '_', s)
-
-                ln = _clean(ln) or 'UNKNOWN'
-                fn = _clean(fn) or 'UNKNOWN'
-
-                return f"{ln},{fn},{y},{m}.pdf"
-
-            pdf_filename = _make_pdf_filename(form_data)
+            # Nutze Utility-Funktion für standardisierten Dateinamen
+            pdf_filename = generate_filename(form_data, 'pdf')
 
             # 👉 Wurde der Mail-Button gedrückt?
             if form_data.get("action") == "send_mail":

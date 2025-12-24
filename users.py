@@ -4,8 +4,13 @@
 import os
 import bcrypt
 import secrets
+import logging
 from datetime import datetime, timedelta
 from flask_login import UserMixin
+from contextlib import contextmanager
+
+# Logging konfigurieren
+logger = logging.getLogger(__name__)
 
 # Datenbank-Konfiguration: PostgreSQL (Production) oder SQLite (Lokal)
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -31,6 +36,22 @@ def get_db_connection():
         return psycopg2.connect(DATABASE_URL)
     else:
         return sqlite3.connect(DATABASE)
+
+
+@contextmanager
+def get_db():
+    """Context Manager für sichere DB-Operationen mit automatischem Commit/Rollback"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        yield cursor
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Datenbankfehler: {e}")
+        raise
+    finally:
+        conn.close()
 
 
 class User(UserMixin):
@@ -175,58 +196,49 @@ def init_submissions_table():
 
 def get_user_by_id(user_id):
     """Lädt User anhand der ID"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = %s', (user_id,))
-    else:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = ?', (user_id,))
-    
-    row = c.fetchone()
-    conn.close()
-    
-    if row:
+    with get_db() as cursor:
         if USE_POSTGRES:
-            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+            cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = %s', (user_id,))
         else:
-            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+            cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE id = ?', (user_id,))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            if USE_POSTGRES:
+                return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+            else:
+                return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
     return None
 
 
 def get_user_by_username(username):
     """Lädt User anhand des Usernamens"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = %s', (username,))
-    else:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
-    
-    row = c.fetchone()
-    conn.close()
-    
-    if row:
+    with get_db() as cursor:
         if USE_POSTGRES:
-            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+            cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = %s', (username,))
         else:
-            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+            cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            if USE_POSTGRES:
+                return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+            else:
+                return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
     return None
 
 
 def verify_password(username, password):
     """Prüft Passwort und gibt User zurück wenn korrekt und approved"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = %s', (username,))
-    else:
-        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
-    
-    row = c.fetchone()
-    conn.close()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = %s', (username,))
+        else:
+            cursor.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE username = ?', (username,))
+        
+        row = cursor.fetchone()
     
     if not row:
         return None
@@ -255,86 +267,70 @@ def create_user(username, password, pfarrei, email=None, is_admin=False, is_appr
     
     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    conn = get_db_connection()
-    c = conn.cursor()
     try:
-        if USE_POSTGRES:
-            c.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
-                      (username, password_hash, pfarrei, email, is_admin, is_approved))
-            user_id = c.fetchone()[0]
-        else:
-            c.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (?, ?, ?, ?, ?, ?)',
-                      (username, password_hash, pfarrei, email, int(is_admin), int(is_approved)))
-            user_id = c.lastrowid
-        
-        conn.commit()
-        conn.close()
-        return User(id=user_id, username=username, pfarrei=pfarrei, email=email, is_admin=is_admin, is_approved=is_approved)
+        with get_db() as cursor:
+            if USE_POSTGRES:
+                cursor.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                          (username, password_hash, pfarrei, email, is_admin, is_approved))
+                user_id = cursor.fetchone()[0]
+            else:
+                cursor.execute('INSERT INTO users (username, password_hash, pfarrei, email, is_admin, is_approved) VALUES (?, ?, ?, ?, ?, ?)',
+                          (username, password_hash, pfarrei, email, int(is_admin), int(is_approved)))
+                user_id = cursor.lastrowid
+            
+            return User(id=user_id, username=username, pfarrei=pfarrei, email=email, is_admin=is_admin, is_approved=is_approved)
     except (psycopg2.IntegrityError if USE_POSTGRES else sqlite3.IntegrityError):
-        conn.close()
+        logger.warning(f"Username {username} existiert bereits")
         return None  # Username existiert bereits
 
 
 def get_all_users():
     """Gibt alle Benutzer zurück (für Admin-Dashboard)"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users ORDER BY id DESC')
-    rows = c.fetchall()
-    conn.close()
-    
-    if USE_POSTGRES:
-        return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5]) for row in rows]
-    else:
-        return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5])) for row in rows]
+    with get_db() as cursor:
+        cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved FROM users ORDER BY id DESC')
+        rows = cursor.fetchall()
+        
+        if USE_POSTGRES:
+            return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5]) for row in rows]
+        else:
+            return [User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5])) for row in rows]
 
 
 def approve_user(user_id):
     """Genehmigt einen Benutzer"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('UPDATE users SET is_approved = TRUE WHERE id = %s', (user_id,))
-    else:
-        c.execute('UPDATE users SET is_approved = 1 WHERE id = ?', (user_id,))
-    
-    conn.commit()
-    conn.close()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('UPDATE users SET is_approved = TRUE WHERE id = %s', (user_id,))
+        else:
+            cursor.execute('UPDATE users SET is_approved = 1 WHERE id = ?', (user_id,))
+    logger.info(f"User {user_id} genehmigt")
 
 
 def reject_user(user_id):
     """Löscht einen nicht genehmigten Benutzer"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('DELETE FROM users WHERE id = %s', (user_id,))
-    else:
-        c.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    
-    conn.commit()
-    conn.close()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
+        else:
+            cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    logger.info(f"User {user_id} abgelehnt und gelöscht")
 
 
 def get_user_by_email(email):
     """Lädt User anhand der E-Mail"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE email = %s', (email,))
-    else:
-        c.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE email = ?', (email,))
-    
-    row = c.fetchone()
-    conn.close()
-    
-    if row:
+    with get_db() as cursor:
         if USE_POSTGRES:
-            return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=row[5], is_approved=row[6], password_hash=row[2])
+            cursor.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE email = %s', (email,))
         else:
-            return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=bool(row[5]), is_approved=bool(row[6]), password_hash=row[2])
+            cursor.execute('SELECT id, username, password_hash, pfarrei, email, is_admin, is_approved FROM users WHERE email = ?', (email,))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            if USE_POSTGRES:
+                return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=row[5], is_approved=row[6], password_hash=row[2])
+            else:
+                return User(id=row[0], username=row[1], pfarrei=row[3], email=row[4], is_admin=bool(row[5]), is_approved=bool(row[6]), password_hash=row[2])
     return None
 
 
@@ -343,51 +339,44 @@ def create_reset_token(user_id):
     token = secrets.token_urlsafe(32)
     expiry = datetime.now() + timedelta(hours=1)
     
-    conn = get_db_connection()
-    c = conn.cursor()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('UPDATE users SET reset_token = %s, reset_token_expiry = %s WHERE id = %s',
+                      (token, expiry, user_id))
+        else:
+            cursor.execute('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
+                      (token, expiry.isoformat(), user_id))
     
-    if USE_POSTGRES:
-        c.execute('UPDATE users SET reset_token = %s, reset_token_expiry = %s WHERE id = %s',
-                  (token, expiry, user_id))
-    else:
-        c.execute('UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
-                  (token, expiry.isoformat(), user_id))
-    
-    conn.commit()
-    conn.close()
-    
+    logger.info(f"Reset-Token erstellt für User {user_id}")
     return token
 
 
 def get_user_by_reset_token(token):
     """Lädt User anhand des Reset-Tokens (wenn noch gültig)"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = %s', (token,))
-    else:
-        c.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = ?', (token,))
-    
-    row = c.fetchone()
-    conn.close()
-    
-    if not row:
-        return None
-    
-    # Token-Ablauf prüfen
-    if USE_POSTGRES:
-        expiry = row[6]
-    else:
-        expiry = datetime.fromisoformat(row[6])
-    
-    if datetime.now() > expiry:
-        return None  # Token abgelaufen
-    
-    if USE_POSTGRES:
-        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
-    else:
-        return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = %s', (token,))
+        else:
+            cursor.execute('SELECT id, username, pfarrei, email, is_admin, is_approved, reset_token_expiry FROM users WHERE reset_token = ?', (token,))
+        
+        row = cursor.fetchone()
+        
+        if not row:
+            return None
+        
+        # Token-Ablauf prüfen
+        if USE_POSTGRES:
+            expiry = row[6]
+        else:
+            expiry = datetime.fromisoformat(row[6])
+        
+        if datetime.now() > expiry:
+            return None  # Token abgelaufen
+        
+        if USE_POSTGRES:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=row[4], is_approved=row[5])
+        else:
+            return User(id=row[0], username=row[1], pfarrei=row[2], email=row[3], is_admin=bool(row[4]), is_approved=bool(row[5]))
 
 
 def reset_password(user_id, new_password):
@@ -404,162 +393,134 @@ def reset_password(user_id, new_password):
     
     password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    conn = get_db_connection()
-    c = conn.cursor()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('UPDATE users SET password_hash = %s, reset_token = NULL, reset_token_expiry = NULL WHERE id = %s',
+                      (password_hash, user_id))
+        else:
+            cursor.execute('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+                      (password_hash, user_id))
     
-    if USE_POSTGRES:
-        c.execute('UPDATE users SET password_hash = %s, reset_token = NULL, reset_token_expiry = NULL WHERE id = %s',
-                  (password_hash, user_id))
-    else:
-        c.execute('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
-                  (password_hash, user_id))
-    
-    conn.commit()
-    conn.close()
+    logger.info(f"Passwort zurückgesetzt für User {user_id}")
 
 
 def delete_user_account(user_id):
     """Löscht einen User-Account komplett (DSGVO Art. 17 - Recht auf Löschung)"""
-    conn = get_db_connection()
-    c = conn.cursor()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
+        else:
+            cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
     
-    if USE_POSTGRES:
-        c.execute('DELETE FROM users WHERE id = %s', (user_id,))
-    else:
-        c.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    
-    conn.commit()
-    conn.close()
+    logger.info(f"User-Account {user_id} gelöscht (DSGVO)")
 
 
 # ============= Zeitaufzeichnungen =============
 
 def save_timerecord(user_id, month_year, form_data):
     """Speichert oder aktualisiert eine Zeitaufzeichnung"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('''
-            INSERT INTO timerecords (user_id, month_year, form_data, updated_at)
-            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (user_id, month_year)
-            DO UPDATE SET form_data = EXCLUDED.form_data, updated_at = CURRENT_TIMESTAMP
-        ''', (user_id, month_year, form_data))
-    else:
-        # SQLite: Erst prüfen ob existiert
-        c.execute('SELECT id FROM timerecords WHERE user_id = ? AND month_year = ?', (user_id, month_year))
-        existing = c.fetchone()
-        
-        if existing:
-            c.execute('UPDATE timerecords SET form_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND month_year = ?',
-                      (form_data, user_id, month_year))
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('''
+                INSERT INTO timerecords (user_id, month_year, form_data, updated_at)
+                VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id, month_year)
+                DO UPDATE SET form_data = EXCLUDED.form_data, updated_at = CURRENT_TIMESTAMP
+            ''', (user_id, month_year, form_data))
         else:
-            c.execute('INSERT INTO timerecords (user_id, month_year, form_data) VALUES (?, ?, ?)',
-                      (user_id, month_year, form_data))
-    
-    conn.commit()
-    conn.close()
+            # SQLite: Erst prüfen ob existiert
+            cursor.execute('SELECT id FROM timerecords WHERE user_id = ? AND month_year = ?', (user_id, month_year))
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute('UPDATE timerecords SET form_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND month_year = ?',
+                          (form_data, user_id, month_year))
+            else:
+                cursor.execute('INSERT INTO timerecords (user_id, month_year, form_data) VALUES (?, ?, ?)',
+                          (user_id, month_year, form_data))
+    logger.info(f"Zeitaufzeichnung gespeichert für User {user_id}, Monat {month_year}")
 
 
 def get_timerecord(user_id, month_year):
     """Lädt eine Zeitaufzeichnung"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT form_data, updated_at FROM timerecords WHERE user_id = %s AND month_year = %s',
-                  (user_id, month_year))
-    else:
-        c.execute('SELECT form_data, updated_at FROM timerecords WHERE user_id = ? AND month_year = ?',
-                  (user_id, month_year))
-    
-    row = c.fetchone()
-    conn.close()
-    
-    if row:
-        return {"form_data": row[0], "updated_at": str(row[1])}
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('SELECT form_data, updated_at FROM timerecords WHERE user_id = %s AND month_year = %s',
+                      (user_id, month_year))
+        else:
+            cursor.execute('SELECT form_data, updated_at FROM timerecords WHERE user_id = ? AND month_year = ?',
+                      (user_id, month_year))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            return {"form_data": row[0], "updated_at": str(row[1])}
     return None
 
 
 def get_all_timerecords(user_id):
     """Lädt alle Zeitaufzeichnungen eines Users"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('SELECT month_year, form_data, updated_at FROM timerecords WHERE user_id = %s ORDER BY month_year DESC',
-                  (user_id,))
-    else:
-        c.execute('SELECT month_year, form_data, updated_at FROM timerecords WHERE user_id = ? ORDER BY month_year DESC',
-                  (user_id,))
-    
-    rows = c.fetchall()
-    conn.close()
-    
-    return [{"month_year": row[0], "form_data": row[1], "updated_at": str(row[2])} for row in rows]
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('SELECT month_year, form_data, updated_at FROM timerecords WHERE user_id = %s ORDER BY month_year DESC',
+                      (user_id,))
+        else:
+            cursor.execute('SELECT month_year, form_data, updated_at FROM timerecords WHERE user_id = ? ORDER BY month_year DESC',
+                      (user_id,))
+        
+        rows = cursor.fetchall()
+        return [{"month_year": row[0], "form_data": row[1], "updated_at": str(row[2])} for row in rows]
 
 
 def delete_timerecord(user_id, month_year):
     """Löscht eine Zeitaufzeichnung"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('DELETE FROM timerecords WHERE user_id = %s AND month_year = %s', (user_id, month_year))
-    else:
-        c.execute('DELETE FROM timerecords WHERE user_id = ? AND month_year = ?', (user_id, month_year))
-    
-    conn.commit()
-    conn.close()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('DELETE FROM timerecords WHERE user_id = %s AND month_year = %s', (user_id, month_year))
+        else:
+            cursor.execute('DELETE FROM timerecords WHERE user_id = ? AND month_year = ?', (user_id, month_year))
+    logger.info(f"Zeitaufzeichnung gelöscht für User {user_id}, Monat {month_year}")
 
 
 def submit_timerecord(user_id, month_year, form_data):
     """Erstellt eine neue Submission (Einreichung)"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('''INSERT INTO submissions (user_id, month_year, form_data, submitted_at) 
-                     VALUES (%s, %s, %s, NOW())''', (user_id, month_year, form_data))
-    else:
-        c.execute('''INSERT INTO submissions (user_id, month_year, form_data, submitted_at) 
-                     VALUES (?, ?, ?, datetime('now'))''', (user_id, month_year, form_data))
-    
-    conn.commit()
-    conn.close()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('''INSERT INTO submissions (user_id, month_year, form_data, submitted_at) 
+                         VALUES (%s, %s, %s, NOW())''', (user_id, month_year, form_data))
+        else:
+            cursor.execute('''INSERT INTO submissions (user_id, month_year, form_data, submitted_at) 
+                         VALUES (?, ?, ?, datetime('now'))''', (user_id, month_year, form_data))
+    logger.info(f"Zeitaufzeichnung eingereicht von User {user_id}, Monat {month_year}")
 
 
 def get_all_submitted_timerecords():
     """Lädt alle eingereichten Zeitaufzeichnungen für Admin"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('''SELECT s.id, s.user_id, u.username, u.email, s.month_year, 
-                            s.form_data, s.submitted_at
-                     FROM submissions s
-                     JOIN users u ON s.user_id = u.id
-                     ORDER BY s.submitted_at DESC''')
-    else:
-        c.execute('''SELECT s.id, s.user_id, u.username, u.email, s.month_year, 
-                            s.form_data, s.submitted_at
-                     FROM submissions s
-                     JOIN users u ON s.user_id = u.id
-                     ORDER BY s.submitted_at DESC''')
-    
-    rows = c.fetchall()
-    conn.close()
-    
-    return [{
-        "id": row[0],
-        "user_id": row[1],
-        "username": row[2],
-        "email": row[3],
-        "month_year": row[4],
-        "form_data": row[5],
-        "submitted_at": str(row[6])
-    } for row in rows]
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('''SELECT s.id, s.user_id, u.username, u.email, s.month_year, 
+                                s.form_data, s.submitted_at
+                         FROM submissions s
+                         JOIN users u ON s.user_id = u.id
+                         ORDER BY s.submitted_at DESC''')
+        else:
+            cursor.execute('''SELECT s.id, s.user_id, u.username, u.email, s.month_year, 
+                                s.form_data, s.submitted_at
+                         FROM submissions s
+                         JOIN users u ON s.user_id = u.id
+                         ORDER BY s.submitted_at DESC''')
+        
+        rows = cursor.fetchall()
+        
+        return [{
+            "id": row[0],
+            "user_id": row[1],
+            "username": row[2],
+            "email": row[3],
+            "month_year": row[4],
+            "form_data": row[5],
+            "submitted_at": str(row[6])
+        } for row in rows]
 
 
 def init_profile_table():
@@ -653,55 +614,49 @@ def init_profile_table():
 
 def get_profile(user_id):
     """Lädt Profildaten eines Users"""
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    if USE_POSTGRES:
-        c.execute('''SELECT vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz 
-                     FROM profiles WHERE user_id = %s''', (user_id,))
-    else:
-        c.execute('''SELECT vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz 
-                     FROM profiles WHERE user_id = ?''', (user_id,))
-    
-    row = c.fetchone()
-    conn.close()
-    
-    if row:
-        return {
-            'vorname': row[0] or '',
-            'nachname': row[1] or '',
-            'geburtsdatum': row[2] or '',
-            'personalnummer': row[3] or '',
-            'einsatzort': row[4] or '',
-            'gkz': row[5] or ''
-        }
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('''SELECT vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz 
+                         FROM profiles WHERE user_id = %s''', (user_id,))
+        else:
+            cursor.execute('''SELECT vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz 
+                         FROM profiles WHERE user_id = ?''', (user_id,))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            return {
+                'vorname': row[0] or '',
+                'nachname': row[1] or '',
+                'geburtsdatum': row[2] or '',
+                'personalnummer': row[3] or '',
+                'einsatzort': row[4] or '',
+                'gkz': row[5] or ''
+            }
     return {}
 
 
 def save_profile(user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz):
     """Speichert oder aktualisiert Profildaten"""
-    conn = get_db_connection()
-    c = conn.cursor()
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('''
+                INSERT INTO profiles (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (user_id) 
+                DO UPDATE SET 
+                    vorname = EXCLUDED.vorname,
+                    nachname = EXCLUDED.nachname,
+                    geburtsdatum = EXCLUDED.geburtsdatum,
+                    personalnummer = EXCLUDED.personalnummer,
+                    einsatzort = EXCLUDED.einsatzort,
+                    gkz = EXCLUDED.gkz,
+                    updated_at = NOW()
+            ''', (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz))
+        else:
+            cursor.execute('''
+                INSERT OR REPLACE INTO profiles (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ''', (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz))
     
-    if USE_POSTGRES:
-        c.execute('''
-            INSERT INTO profiles (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
-            ON CONFLICT (user_id) 
-            DO UPDATE SET 
-                vorname = EXCLUDED.vorname,
-                nachname = EXCLUDED.nachname,
-                geburtsdatum = EXCLUDED.geburtsdatum,
-                personalnummer = EXCLUDED.personalnummer,
-                einsatzort = EXCLUDED.einsatzort,
-                gkz = EXCLUDED.gkz,
-                updated_at = NOW()
-        ''', (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz))
-    else:
-        c.execute('''
-            INSERT OR REPLACE INTO profiles (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-        ''', (user_id, vorname, nachname, geburtsdatum, personalnummer, einsatzort, gkz))
-    
-    conn.commit()
-    conn.close()
+    logger.info(f"Profil gespeichert für User {user_id}")

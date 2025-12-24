@@ -3,8 +3,12 @@
 
 # pdf_service.py
 import json
+import logging
 from datetime import datetime
 from pypdf import PdfReader, PdfWriter
+from utils import generate_filename, format_date_german
+
+logger = logging.getLogger(__name__)
 
 TEMPLATE = "Zeitaufzeichnung_Gfb_-_Kuester__Chorleiter_Organisten.pdf"
 
@@ -198,21 +202,7 @@ def create_pdf(form_data: dict, output_path: str):
         
         # Formatiere Datum und Geburtsdatum als Tag Monat Jahr (z.B. 23 Dezember 2025)
         if key in ("Datum", "Geburtsdatum"):
-            try:
-                # Erkenne Format und konvertiere
-                if "-" in value and len(value) == 10:  # YYYY-MM-DD
-                    datum_obj = datetime.strptime(value, "%Y-%m-%d")
-                elif "." in value and len(value) == 10:  # DD.MM.YYYY
-                    datum_obj = datetime.strptime(value, "%d.%m.%Y")
-                else:
-                    datum_obj = None
-                
-                if datum_obj:
-                    monate = ["Januar", "Februar", "März", "April", "Mai", "Juni",
-                             "Juli", "August", "September", "Oktober", "November", "Dezember"]
-                    value = f"{datum_obj.day} {monate[datum_obj.month - 1]} {datum_obj.year}"
-            except Exception:
-                pass
+            value = format_date_german(value)
         
         if key in PDF_FIELD_MAP:
             werte_pdf[PDF_FIELD_MAP[key]] = value
@@ -225,19 +215,18 @@ def create_pdf(form_data: dict, output_path: str):
     # >>> Basierend auf Tätigkeit entweder Gottesdienste oder Arbeitszeiten verwenden
     taetigkeit = (form_data.get("Tätigkeit") or "").strip()
     
-    # Debug: Tätigkeit ausgeben (kann später entfernt werden)
-    print(f"DEBUG: Tätigkeit = '{taetigkeit}'")
+    logger.debug(f"Tätigkeit: '{taetigkeit}'")
     
     if taetigkeit == "Organist":
         # Nur Gottesdienste für Organisten
-        print("DEBUG: Verwende Gottesdienste")
+        logger.debug("Verwende Gottesdienste")
         werte_pdf = apply_gottesdienste_to_pdf_fields(werte_pdf, form_data.get("Gottesdienste", "[]"))
     elif taetigkeit and taetigkeit != "":
         # Arbeitszeiten für alle anderen Tätigkeiten (aber nicht wenn Tätigkeit leer ist)
-        print("DEBUG: Verwende Arbeitszeiten")
+        logger.debug("Verwende Arbeitszeiten")
         werte_pdf = apply_arbeitszeiten_to_pdf_fields(werte_pdf, form_data.get("Arbeitszeiten", "[]"))
     else:
-        print("DEBUG: Keine Tätigkeit ausgewählt - weder Gottesdienste noch Arbeitszeiten")
+        logger.debug("Keine Tätigkeit ausgewählt - weder Gottesdienste noch Arbeitszeiten")
 
     # In alle Seiten schreiben (pypdf setzt pro Seite nur die Felder, die dort existieren)
     for page in writer.pages:
