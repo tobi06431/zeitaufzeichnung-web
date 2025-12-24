@@ -361,10 +361,13 @@ def api_submit_timerecord(month_year):
         profile_data = get_profile(current_user.id)
         form_data = json.loads(timerecord['form_data'])
         
-        # Füge Profildaten hinzu
+        # Füge Profildaten hinzu (konvertiere date zu string falls nötig)
         form_data['Vorname'] = profile_data.get('vorname', '')
         form_data['Nachname'] = profile_data.get('nachname', '')
-        form_data['Geburtsdatum'] = profile_data.get('geburtsdatum', '')
+        geburtsdatum = profile_data.get('geburtsdatum', '')
+        if hasattr(geburtsdatum, 'isoformat'):
+            geburtsdatum = geburtsdatum.isoformat()
+        form_data['Geburtsdatum'] = str(geburtsdatum) if geburtsdatum else ''
         form_data['Pers.-Nr.'] = profile_data.get('personalnummer', '')
         form_data['Einsatzort'] = profile_data.get('einsatzort', '')
         form_data['GKZ'] = profile_data.get('gkz', '')
