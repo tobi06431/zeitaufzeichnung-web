@@ -273,6 +273,11 @@ function initPanels() {
     const btn = panel.querySelector('.panel__toggle');
     if (!btn) return;
 
+    // Ensure button doesn't submit form
+    if (btn.tagName === 'BUTTON' && !btn.hasAttribute('type')) {
+      btn.setAttribute('type', 'button');
+    }
+
     const collapsed = !!state[id];
     if (collapsed) {
       panel.classList.add('collapsed');
@@ -283,7 +288,11 @@ function initPanels() {
       btn.setAttribute('aria-expanded', 'true');
     }
 
-    function toggle() {
+    function toggle(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       panel.classList.toggle('collapsed');
       const nowCollapsed = panel.classList.contains('collapsed');
       btn.textContent = nowCollapsed ? '►' : '▼';
@@ -292,12 +301,12 @@ function initPanels() {
       savePanelState(state);
     }
 
-    btn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+    btn.addEventListener('click', toggle);
     const header = panel.querySelector('.panel__header');
     if (header) {
       header.addEventListener('click', (e) => {
         if (e.target.closest('.panel__toggle')) return;
-        toggle();
+        toggle(e);
       });
     }
   });
