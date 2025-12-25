@@ -30,7 +30,12 @@ async function init() {
     const ev = (el.tagName && el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
     el.addEventListener(ev, () => {
       window.saveProfileField && window.saveProfileField(id, el.value);
-      if (id === 'taetigkeit_input') window.updateGottesdiensteVisibility && window.updateGottesdiensteVisibility();
+      if (id === 'taetigkeit_input') {
+        window.updateGottesdiensteVisibility && window.updateGottesdiensteVisibility();
+        // Bei Tätigkeitswechsel Listen neu laden (da Storage-Key sich ändert)
+        window.handleContextChange && window.handleContextChange();
+        window.handleAZContextChange && window.handleAZContextChange();
+      }
     });
   });
   

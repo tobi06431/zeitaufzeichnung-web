@@ -7,7 +7,9 @@ function getStorageKey() {
   const p = window.getSelectedPfarrei ? window.getSelectedPfarrei() : (document.getElementById('kirchengemeinde_input')?.value || 'UNBEKANNT_PFARREI');
   const mEl = document.getElementById('monatjahr_input');
   const m = (mEl && mEl.value) ? mEl.value.trim() : 'OHNE_MONAT';
-  return `za_gd_v2|${p}|${m}`;
+  const tEl = document.getElementById('taetigkeit_input');
+  const t = (tEl && tEl.value) ? tEl.value.trim() : 'OHNE_TAETIGKEIT';
+  return `za_gd_v2|${p}|${m}|${t}`;
 }
 
 function saveGottesdienste() {
