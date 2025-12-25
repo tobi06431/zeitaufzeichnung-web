@@ -163,6 +163,16 @@ body{
   background: var(--bg);
 }
 
+.user-dropdown__item--sub {
+  font-size: 13px;
+  padding-left: 42px;
+  color: var(--muted);
+}
+
+.user-dropdown__item--sub:hover {
+  color: var(--text);
+}
+
 .user-dropdown__item--danger {
   color: var(--danger);
 }
