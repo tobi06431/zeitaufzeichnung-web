@@ -394,6 +394,89 @@ function updateGottesdiensteVisibility() {
   }
 }
 
+/* Zusammenfassung aktualisieren */
+function updateSummary() {
+  // Pfarrei
+  const pfarreiEl = document.getElementById('kirchengemeinde_input');
+  const summaryPfarrei = document.getElementById('summary-pfarrei');
+  if (pfarreiEl && summaryPfarrei) {
+    const pfarreiValue = pfarreiEl.value;
+    const valueSpan = summaryPfarrei.querySelector('.summary-item__value');
+    const icon = summaryPfarrei.querySelector('.summary-item__icon');
+    if (pfarreiValue) {
+      valueSpan.textContent = pfarreiValue;
+      icon.textContent = '✓';
+      summaryPfarrei.classList.add('completed');
+    } else {
+      valueSpan.textContent = 'Nicht ausgewählt';
+      icon.textContent = '⚪';
+      summaryPfarrei.classList.remove('completed');
+    }
+  }
+  
+  // Tätigkeit
+  const taetigkeitEl = document.getElementById('taetigkeit_input');
+  const summaryTaetigkeit = document.getElementById('summary-taetigkeit');
+  if (taetigkeitEl && summaryTaetigkeit) {
+    const taetigkeitValue = taetigkeitEl.value;
+    const valueSpan = summaryTaetigkeit.querySelector('.summary-item__value');
+    const icon = summaryTaetigkeit.querySelector('.summary-item__icon');
+    if (taetigkeitValue) {
+      valueSpan.textContent = taetigkeitValue;
+      icon.textContent = '✓';
+      summaryTaetigkeit.classList.add('completed');
+    } else {
+      valueSpan.textContent = 'Nicht ausgewählt';
+      icon.textContent = '⚪';
+      summaryTaetigkeit.classList.remove('completed');
+    }
+  }
+  
+  // Monat/Jahr
+  const monatEl = document.getElementById('monatjahr_input');
+  const summaryMonat = document.getElementById('summary-monat');
+  if (monatEl && summaryMonat) {
+    const monatValue = monatEl.value;
+    const valueSpan = summaryMonat.querySelector('.summary-item__value');
+    const icon = summaryMonat.querySelector('.summary-item__icon');
+    if (monatValue) {
+      valueSpan.textContent = monatValue;
+      icon.textContent = '✓';
+      summaryMonat.classList.add('completed');
+    } else {
+      valueSpan.textContent = 'Nicht ausgewählt';
+      icon.textContent = '⚪';
+      summaryMonat.classList.remove('completed');
+    }
+  }
+  
+  // Arbeitszeiten zählen
+  const summaryArbeitszeiten = document.getElementById('summary-arbeitszeiten');
+  if (summaryArbeitszeiten && window.arbeitszeiten) {
+    const count = window.arbeitszeiten.length;
+    const valueSpan = summaryArbeitszeiten.querySelector('.summary-item__value');
+    valueSpan.textContent = `${count} erfasst`;
+    if (count > 0) {
+      summaryArbeitszeiten.classList.add('has-data');
+    } else {
+      summaryArbeitszeiten.classList.remove('has-data');
+    }
+  }
+  
+  // Gottesdienste zählen
+  const summaryGottesdienste = document.getElementById('summary-gottesdienste');
+  if (summaryGottesdienste && window.gottesdienste) {
+    const count = window.gottesdienste.length;
+    const valueSpan = summaryGottesdienste.querySelector('.summary-item__value');
+    valueSpan.textContent = `${count} erfasst`;
+    if (count > 0) {
+      summaryGottesdienste.classList.add('has-data');
+    } else {
+      summaryGottesdienste.classList.remove('has-data');
+    }
+  }
+}
+
 // Export UI helpers
 window.updateOrtSuggestions = updateOrtSuggestions;
 window.populateMonatJahrSelect = populateMonatJahrSelect;
@@ -406,4 +489,4 @@ window.renderGottesdienste = renderGottesdienste;
 window.renderArbeitszeiten = renderArbeitszeiten;
 window.initPanels = initPanels;
 window.updateGottesdiensteVisibility = updateGottesdiensteVisibility;
-
+window.updateSummary = updateSummary;

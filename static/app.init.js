@@ -36,6 +36,7 @@ async function init() {
         window.handleContextChange && window.handleContextChange();
         window.handleAZContextChange && window.handleAZContextChange();
       }
+      window.updateSummary && window.updateSummary();
     });
   });
   
@@ -52,6 +53,7 @@ async function init() {
       window.updateOrtSuggestions && window.updateOrtSuggestions();
       window.handleContextChange && window.handleContextChange();
       window.handleAZContextChange && window.handleAZContextChange();
+      window.updateSummary && window.updateSummary();
     });
     if (kirchEl.value) {
       window.updateOrtSuggestions && window.updateOrtSuggestions();
@@ -82,6 +84,7 @@ async function init() {
     if (az_datum) az_datum.value = '';
     window.handleContextChange && window.handleContextChange();
     window.handleAZContextChange && window.handleAZContextChange();
+    window.updateSummary && window.updateSummary();
   });
 
   window.initPanels && window.initPanels();
@@ -91,6 +94,9 @@ async function init() {
   if (dataLoaded) {
     console.log('✅ Formulardaten vom Server geladen - Listen aktualisiert');
   }
+  
+  // Initiale Zusammenfassung aktualisieren
+  window.updateSummary && window.updateSummary();
   
   // Auto-Save aktivieren (alle 30 Sekunden)
   window.startAutoSave && window.startAutoSave();

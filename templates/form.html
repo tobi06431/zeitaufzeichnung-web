@@ -68,6 +68,42 @@
 {% endwith %}
 
 <div class="container">
+  
+  <!-- Zusammenfassung / Übersicht -->
+  <div class="summary-card" id="form-summary">
+    <div class="summary-card__header">
+      <span class="summary-card__icon">📋</span>
+      <span class="summary-card__title">Aktuelle Aufzeichnung</span>
+    </div>
+    <div class="summary-card__content">
+      <div class="summary-item" id="summary-pfarrei">
+        <span class="summary-item__icon">⚪</span>
+        <span class="summary-item__label">Pfarrei:</span>
+        <span class="summary-item__value">Nicht ausgewählt</span>
+      </div>
+      <div class="summary-item" id="summary-taetigkeit">
+        <span class="summary-item__icon">⚪</span>
+        <span class="summary-item__label">Tätigkeit:</span>
+        <span class="summary-item__value">Nicht ausgewählt</span>
+      </div>
+      <div class="summary-item" id="summary-monat">
+        <span class="summary-item__icon">⚪</span>
+        <span class="summary-item__label">Zeitraum:</span>
+        <span class="summary-item__value">Nicht ausgewählt</span>
+      </div>
+      <div class="summary-item" id="summary-arbeitszeiten">
+        <span class="summary-item__icon">⏱️</span>
+        <span class="summary-item__label">Arbeitszeiten:</span>
+        <span class="summary-item__value">0 erfasst</span>
+      </div>
+      <div class="summary-item" id="summary-gottesdienste">
+        <span class="summary-item__icon">⛪</span>
+        <span class="summary-item__label">Gottesdienste:</span>
+        <span class="summary-item__value">0 erfasst</span>
+      </div>
+    </div>
+  </div>
+  
   <div class="card">
 
     <form method="post">

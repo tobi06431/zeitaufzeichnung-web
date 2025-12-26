@@ -29,6 +29,7 @@ function loadGottesdienste() {
 
 function updateListe() {
   window.renderGottesdienste && window.renderGottesdienste(gottesdienste);
+  window.updateSummary && window.updateSummary();
 }
 
 function addGottesdienst() {
@@ -66,6 +67,7 @@ function addGottesdienst() {
   }
 
   gottesdienste.push(gd);
+  window.gottesdienste = gottesdienste; // Array aktualisieren
   window.saveTimesForEntry && window.saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende, gd.satz);
   saveGottesdienste();
   updateListe();
@@ -79,6 +81,7 @@ function addGottesdienst() {
 
 function removeGottesdienst(i) {
   gottesdienste.splice(i, 1);
+  window.gottesdienste = gottesdienste; // Array aktualisieren
   saveGottesdienste();
   updateListe();
 }
@@ -86,6 +89,7 @@ function removeGottesdienst(i) {
 function clearGottesdienste() {
   if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
   gottesdienste = [];
+  window.gottesdienste = gottesdienste; // Array aktualisieren
   saveGottesdienste(); // Speichert leere Liste (wichtig für Sync!)
   updateListe();
 }
@@ -96,6 +100,7 @@ function handleContextChange() {
   if (currentStorageKey) saveGottesdienste();
   currentStorageKey = newKey;
   loadGottesdienste();
+  window.gottesdienste = gottesdienste; // Array aktualisieren
   updateListe();
   window.applyDateRestrictionSilently && window.applyDateRestrictionSilently();
 }
@@ -107,6 +112,7 @@ window.clearGottesdienste = clearGottesdienste;
 window.handleContextChange = handleContextChange;
 window.loadGottesdienste = loadGottesdienste;
 window.getGottesdienste = () => gottesdienste;
+window.gottesdienste = gottesdienste; // für direkten Zugriff
 window.setCurrentStorageKey = (k) => { currentStorageKey = k; };
 window.getStorageKey = getStorageKey;
 

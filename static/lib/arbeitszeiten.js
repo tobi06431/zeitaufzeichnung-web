@@ -29,6 +29,7 @@ function loadArbeitszeiten() {
 
 function updateAZListe() {
   window.renderArbeitszeiten && window.renderArbeitszeiten(arbeitszeiten);
+  window.updateSummary && window.updateSummary();
 }
 
 function addArbeitszeit() {
@@ -62,6 +63,7 @@ function addArbeitszeit() {
   }
 
   arbeitszeiten.push(az);
+  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
   saveArbeitszeiten();
   updateAZListe();
 
@@ -72,6 +74,7 @@ function addArbeitszeit() {
 
 function removeArbeitszeit(i) {
   arbeitszeiten.splice(i, 1);
+  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
   saveArbeitszeiten();
   updateAZListe();
 }
@@ -79,6 +82,7 @@ function removeArbeitszeit(i) {
 function clearArbeitszeiten() {
   if (!confirm("Alle Arbeitszeiten dieser Aufzeichnung löschen?")) return;
   arbeitszeiten = [];
+  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
   saveArbeitszeiten(); // Speichert leere Liste (wichtig für Sync!)
   updateAZListe();
 }
@@ -89,6 +93,7 @@ function handleAZContextChange() {
   if (currentAZStorageKey) saveArbeitszeiten();
   currentAZStorageKey = newKey;
   loadArbeitszeiten();
+  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
   updateAZListe();
 }
 
@@ -99,5 +104,6 @@ window.clearArbeitszeiten = clearArbeitszeiten;
 window.handleAZContextChange = handleAZContextChange;
 window.loadArbeitszeiten = loadArbeitszeiten;
 window.getArbeitszeiten = () => arbeitszeiten;
+window.arbeitszeiten = arbeitszeiten; // für direkten Zugriff
 window.setCurrentAZStorageKey = (k) => { currentAZStorageKey = k; };
 window.getAZStorageKey = getAZStorageKey;
