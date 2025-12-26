@@ -523,6 +523,16 @@ def get_all_submitted_timerecords():
         } for row in rows]
 
 
+def delete_submission(submission_id):
+    """Löscht eine eingereichte Zeitaufzeichnung"""
+    with get_db() as cursor:
+        if USE_POSTGRES:
+            cursor.execute('DELETE FROM submissions WHERE id = %s', (submission_id,))
+        else:
+            cursor.execute('DELETE FROM submissions WHERE id = ?', (submission_id,))
+    logger.info(f"Submission {submission_id} gelöscht")
+
+
 def init_profile_table():
     """Erstellt die Profile-Tabelle, falls nicht vorhanden"""
     conn = get_db_connection()

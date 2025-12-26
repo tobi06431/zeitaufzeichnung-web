@@ -386,9 +386,23 @@
           <h2 style="margin: 0; color: #111827;">{{ sub.username }} <span class="toggle-icon">▼</span></h2>
           <p style="margin: 5px 0 0 0; color: #6b7280;">{{ sub.email }}</p>
         </div>
-        <div style="text-align: right;">
-          <div style="font-size: 20px; font-weight: 700; color: #2563eb;">{{ sub.month_year }}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Eingereicht: {{ sub.submitted_at }}</div>
+        <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: #2563eb;">{{ sub.month_year }}</div>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Eingereicht: {{ sub.submitted_at }}</div>
+          </div>
+          <form method="post" action="{{ url_for('admin_delete_submission', submission_id=sub.id) }}" 
+                style="margin: 0;"
+                onclick="event.stopPropagation();" 
+                onsubmit="return confirm('⚠️ Zeitaufzeichnung wirklich löschen?\n\nUser: {{ sub.username }}\nMonat: {{ sub.month_year }}\n\nDieser Vorgang kann nicht rückgängig gemacht werden!');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" 
+                    style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background 0.2s;"
+                    onmouseover="this.style.background='#b91c1c'" 
+                    onmouseout="this.style.background='#dc2626'">
+              🗑️ Löschen
+            </button>
+          </form>
         </div>
       </div>
 
