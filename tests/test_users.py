@@ -121,7 +121,7 @@ class TestDatabaseIntegration:
         """Test: Benutzer erstellen und abrufen"""
         from users import create_user, get_user_by_username, get_user_by_email
         
-        user = create_user("testuser", "securepass123", "Test Pfarrei", 
+        user = create_user("testuser", "Securepass123", "Test Pfarrei", 
                           email="test@example.com", is_admin=False)
         
         assert user is not None
@@ -144,20 +144,22 @@ class TestDatabaseIntegration:
         """Test: Passwort-Verifikation"""
         from users import create_user, verify_password
         
-        user = create_user("pwtest", "mypassword", "Test Pfarrei", 
+        user = create_user("pwtest", "MyPassword123", "Test Pfarrei", 
                           email="pw@test.com")
         
-        # Korrektes Passwort
-        assert verify_password(user, "mypassword") == True
+        # Korrektes Passwort - gibt User-Objekt zurück
+        verified_user = verify_password("pwtest", "MyPassword123")
+        assert verified_user is not None
+        assert verified_user.username == "pwtest"
         
-        # Falsches Passwort
-        assert verify_password(user, "wrongpassword") == False
+        # Falsches Passwort - gibt None zurück
+        assert verify_password("pwtest", "WrongPassword") is None
     
     def test_approve_user(self, temp_db):
         """Test: Benutzer-Freigabe"""
         from users import create_user, approve_user, get_user_by_id
         
-        user = create_user("approvetest", "pass", "Test Pfarrei",
+        user = create_user("approvetest", "TestPass123", "Test Pfarrei",
                           email="approve@test.com", is_approved=False)
         
         assert user.is_approved == False
@@ -171,7 +173,7 @@ class TestDatabaseIntegration:
         """Test: Passwort-Reset-Token"""
         from users import create_user, create_reset_token, get_user_by_reset_token, reset_password
         
-        user = create_user("resettest", "oldpassword", "Test Pfarrei",
+        user = create_user("resettest", "OldPassword123", "Test Pfarrei",
                           email="reset@test.com", is_approved=True)
         
         # Token erstellen
@@ -185,7 +187,7 @@ class TestDatabaseIntegration:
         assert user_from_token.id == user.id
         
         # Passwort zurücksetzen
-        reset_password(user.id, "newpassword123")
+        reset_password(user.id, "NewPassword123")
         
         # Token sollte danach ungültig sein
         assert get_user_by_reset_token(token) is None
@@ -194,7 +196,7 @@ class TestDatabaseIntegration:
         """Test: Profilverwaltung"""
         from users import create_user, save_profile, get_profile
         
-        user = create_user("profiletest", "pass", "Test Pfarrei",
+        user = create_user("profiletest", "TestPass123", "Test Pfarrei",
                           email="profile@test.com", is_approved=True)
         
         # Profil speichern

@@ -1,0 +1,16 @@
+2025-12-26 20:21:17,425 - users - ERROR - Datenbankfehler: Error binding parameter 1: type 'User' is not supported
+2025-12-26 20:21:17,685 - users - INFO - User 1 genehmigt
+2025-12-26 20:21:17,924 - users - INFO - Reset-Token erstellt für User 1
+2025-12-26 20:21:18,244 - users - INFO - Passwort zurückgesetzt für User 1
+2025-12-26 20:21:18,483 - users - INFO - Profil gespeichert für User 1
+2025-12-26 20:21:18,483 - users - INFO - Profil gespeichert für User 1
+2025-12-26 20:22:07,732 - users - INFO - User 1 genehmigt
+2025-12-26 20:22:07,974 - users - INFO - Reset-Token erstellt für User 1
+2025-12-26 20:22:08,210 - users - INFO - Passwort zurückgesetzt für User 1
+2025-12-26 20:22:08,449 - users - INFO - Profil gespeichert für User 1
+2025-12-26 20:22:08,450 - users - INFO - Profil gespeichert für User 1
+2025-12-26 20:22:56,768 - users - INFO - User 1 genehmigt
+2025-12-26 20:22:57,007 - users - INFO - Reset-Token erstellt für User 1
+2025-12-26 20:22:57,241 - users - INFO - Passwort zurückgesetzt für User 1
+2025-12-26 20:22:57,480 - users - INFO - Profil gespeichert für User 1
+2025-12-26 20:22:57,480 - users - INFO - Profil gespeichert für User 1

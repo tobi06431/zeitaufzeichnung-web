@@ -209,8 +209,92 @@
       padding: 20px;
       text-align: center;
     }
+    .filter-bar {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 10px 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      flex: 1;
+      min-width: 200px;
+    }
+    .filter-bar button {
+      padding: 10px 20px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .filter-bar button:hover {
+      background: #1d4ed8;
+    }
+    .filter-bar .reset-btn {
+      background: #6b7280;
+    }
+    .filter-bar .reset-btn:hover {
+      background: #4b5563;
+    }
+    .stats-bar {
+      background: #f3f4f6;
+      padding: 15px 20px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .stats-info {
+      color: #374151;
+      font-weight: 600;
+    }
+    .pagination {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pagination a, .pagination span {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #374151;
+      background: white;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .pagination a:hover {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+    .pagination .current {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+      font-weight: 600;
+    }
+    .pagination .disabled {
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
     @media print {
-      .back-btn { display: none; }
+      .back-btn, .filter-bar, .stats-bar, .pagination { display: none; }
       .submission-card { page-break-inside: avoid; }
     }
   </style>
@@ -222,7 +306,63 @@
   
   <h1>📋 Eingereichte Zeitaufzeichnungen</h1>
   
-  {% if submissions|length == 0 %}
+  <!-- FILTER & SUCHE -->
+  <form method="get" action="{{ url_for('admin_submissions') }}" class="filter-bar">
+    <input type="text" 
+           name="search" 
+           placeholder="🔍 Suche nach Name, Email..." 
+           value="{{ search }}"
+           style="flex: 2;">
+    
+    <select name="month">
+      <option value="">Alle Monate</option>
+      {% for month in available_months %}
+      <option value="{{ month }}" {% if month_filter == month %}selected{% endif %}>
+        {{ month }}
+      </option>
+      {% endfor %}
+    </select>
+    
+    <select name="sort">
+      <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Neueste zuerst</option>
+      <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Älteste zuerst</option>
+      <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nach Name</option>
+      <option value="month" {% if sort_by == 'month' %}selected{% endif %}>Nach Monat</option>
+    </select>
+    
+    <button type="submit">Filtern</button>
+    <a href="{{ url_for('admin_submissions') }}" class="reset-btn" style="padding: 10px 20px; background: #6b7280; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Zurücksetzen</a>
+  </form>
+
+  <!-- STATISTIK & PAGINATION OBEN -->
+  {% if total > 0 %}
+  <div class="stats-bar">
+    <div class="stats-info">
+      📊 {{ total }} Einträge gefunden (Seite {{ page }} von {{ total_pages }})
+    </div>
+    <div class="pagination">
+      {% if page > 1 %}
+        <a href="?page=1&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">« Erste</a>
+        <a href="?page={{ page - 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">‹ Zurück</a>
+      {% else %}
+        <span class="disabled">« Erste</span>
+        <span class="disabled">‹ Zurück</span>
+      {% endif %}
+      
+      <span class="current">{{ page }}</span>
+      
+      {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Weiter ›</a>
+        <a href="?page={{ total_pages }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Letzte »</a>
+      {% else %}
+        <span class="disabled">Weiter ›</span>
+        <span class="disabled">Letzte »</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  
+  {% if total == 0 %}
     <div class="empty-state">
       <p>Keine eingereichten Zeitaufzeichnungen vorhanden.</p>
     </div>
@@ -271,6 +411,34 @@
       <div class="submission-details">
 
       <!-- ZUSÄTZLICHE META INFORMATIONEN -->
+
+    <!-- PAGINATION UNTEN -->
+    {% if total_pages > 1 %}
+    <div class="stats-bar">
+      <div class="stats-info">
+        Seite {{ page }} von {{ total_pages }}
+      </div>
+      <div class="pagination">
+        {% if page > 1 %}
+          <a href="?page=1&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">« Erste</a>
+          <a href="?page={{ page - 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">‹ Zurück</a>
+        {% else %}
+          <span class="disabled">« Erste</span>
+          <span class="disabled">‹ Zurück</span>
+        {% endif %}
+        
+        <span class="current">{{ page }}</span>
+        
+        {% if page < total_pages %}
+          <a href="?page={{ page + 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Weiter ›</a>
+          <a href="?page={{ total_pages }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Letzte »</a>
+        {% else %}
+          <span class="disabled">Weiter ›</span>
+          <span class="disabled">Letzte »</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
       <div class="submission-meta">
         <div class="meta-item">
           <div class="meta-label">Geburtsdatum</div>

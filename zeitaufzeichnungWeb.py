@@ -399,10 +399,17 @@ def api_submit_timerecord(month_year):
 @app.route("/admin/submissions")
 @login_required
 def admin_submissions():
-    """Zeigt alle eingereichten Zeitaufzeichnungen"""
+    """Zeigt alle eingereichten Zeitaufzeichnungen mit Filter und Pagination"""
     if not current_user.is_admin:
         flash("❌ Keine Berechtigung.")
         return redirect(url_for("index"))
+    
+    # Parameter aus Query-String
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    search = request.args.get('search', '').strip().lower()
+    month_filter = request.args.get('month', '').strip()
+    sort_by = request.args.get('sort', 'date_desc')
     
     submissions = get_all_submitted_timerecords()
     
@@ -429,7 +436,55 @@ def admin_submissions():
             logger.error(f"Error parsing submission data: {e}")
             sub['form_data_parsed'] = {}
     
-    return render_template("admin_submissions.html", submissions=submissions)
+    # Filter anwenden
+    filtered_submissions = []
+    for sub in submissions:
+        data = sub.get('form_data_parsed', {})
+        
+        # Suchfilter (Name, Pfarrei, Email)
+        if search:
+            searchable = f"{sub.get('username', '')} {sub.get('email', '')} {data.get('Vorname', '')} {data.get('Nachname', '')} {data.get('Kath. Kirchengemeinde', '')}".lower()
+            if search not in searchable:
+                continue
+        
+        # Monatsfilter
+        if month_filter and sub.get('month_year', '') != month_filter:
+            continue
+        
+        filtered_submissions.append(sub)
+    
+    # Sortierung
+    if sort_by == 'date_desc':
+        filtered_submissions.sort(key=lambda x: x.get('submitted_at', ''), reverse=True)
+    elif sort_by == 'date_asc':
+        filtered_submissions.sort(key=lambda x: x.get('submitted_at', ''))
+    elif sort_by == 'name':
+        filtered_submissions.sort(key=lambda x: (x['form_data_parsed'].get('Nachname', ''), x['form_data_parsed'].get('Vorname', '')))
+    elif sort_by == 'month':
+        filtered_submissions.sort(key=lambda x: x.get('month_year', ''))
+    
+    # Pagination
+    total = len(filtered_submissions)
+    total_pages = (total + per_page - 1) // per_page if per_page > 0 else 1
+    page = max(1, min(page, total_pages))
+    
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_submissions = filtered_submissions[start:end]
+    
+    # Verfügbare Monate für Filter
+    available_months = sorted(list(set(sub.get('month_year', '') for sub in submissions if sub.get('month_year'))), reverse=True)
+    
+    return render_template("admin_submissions.html", 
+                         submissions=paginated_submissions,
+                         page=page,
+                         total_pages=total_pages,
+                         total=total,
+                         per_page=per_page,
+                         search=search,
+                         month_filter=month_filter,
+                         sort_by=sort_by,
+                         available_months=available_months)
 
 
 @app.route("/", methods=["GET", "POST"])
