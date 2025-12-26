@@ -111,75 +111,54 @@
 
       <!-- ================= KIRCHENGEMEINDE ================= -->
 
-      <div class="panel" data-panel-id="pfarrei">
-        <div class="panel__header">
-          <div class="panel__title">Pfarrei</div>
-          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
-        </div>
-        <div class="panel__content">
-
-          <label>Kath. Kirchengemeinde</label>
-          <select name="Kath. Kirchengemeinde" id="kirchengemeinde_input">
-            <option value="{{ user_pfarrei }}" selected>{{ user_pfarrei }}</option>
-          </select>
-          <small style="color: #666; display: block; margin-top: 5px;">
-            Automatisch auf deine Pfarrei gesetzt
-          </small>
-
-        </div>
+      <div class="form-section">
+        <h3 class="form-section__title">Pfarrei</h3>
+        <label>Kath. Kirchengemeinde</label>
+        <select name="Kath. Kirchengemeinde" id="kirchengemeinde_input">
+          <option value="{{ user_pfarrei }}" selected>{{ user_pfarrei }}</option>
+        </select>
+        <small style="color: #666; display: block; margin-top: 5px;">
+          Automatisch auf deine Pfarrei gesetzt
+        </small>
       </div>
 
       <!-- ================= TÄTIGKEIT ================= -->
 
-      <div class="panel" data-panel-id="taetigkeit">
-        <div class="panel__header">
-          <div class="panel__title">Tätigkeit</div>
-          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
-        </div>
-        <div class="panel__content">
-
-          <label>Tätigkeit
-            <select name="Tätigkeit" id="taetigkeit_input" required>
-              <option value="">-- auswählen --</option>
-              <option value="Verwaltungskraft">Verwaltungskraft</option>
-              <option value="Organist">Organist</option>
-              <option value="Chorleiter">Chorleiter</option>
-              <option value="Küster">Küster</option>
-              <option value="Pflege Außenanlage">Pflege Außenanlage</option>
-              <option value="Reinigung Pfarrheim">Reinigung Pfarrheim</option>
-              <option value="Reinigung Kirche">Reinigung Kirche</option>
-              <option value="Reinigung Pfarrbüro">Reinigung Pfarrbüro</option>
-              <option value="Hausmeister">Hausmeister</option>
-              <option value="Kirchenwäsche">Kirchenwäsche</option>
-              <option value="Beerdigungsdienst">Beerdigungsdienst</option>
-            </select>
-          </label>
-          
-          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 15px; border-radius: 4px;">
-            <strong style="color: #92400e;">ℹ️ Wichtig:</strong>
-            <p style="margin: 5px 0 0 0; color: #78350f; font-size: 14px;">
-              Pro Formular kann nur <strong>eine Tätigkeit</strong> ausgewählt werden. 
-              Falls Sie mehrere Tätigkeiten ausüben, füllen Sie bitte für jede Tätigkeit ein separates Formular aus.
-            </p>
-          </div>
-
+      <div class="form-section">
+        <h3 class="form-section__title">Tätigkeit</h3>
+        <label>Tätigkeit
+          <select name="Tätigkeit" id="taetigkeit_input" required>
+            <option value="">-- auswählen --</option>
+            <option value="Verwaltungskraft">Verwaltungskraft</option>
+            <option value="Organist">Organist</option>
+            <option value="Chorleiter">Chorleiter</option>
+            <option value="Küster">Küster</option>
+            <option value="Pflege Außenanlage">Pflege Außenanlage</option>
+            <option value="Reinigung Pfarrheim">Reinigung Pfarrheim</option>
+            <option value="Reinigung Kirche">Reinigung Kirche</option>
+            <option value="Reinigung Pfarrbüro">Reinigung Pfarrbüro</option>
+            <option value="Hausmeister">Hausmeister</option>
+            <option value="Kirchenwäsche">Kirchenwäsche</option>
+            <option value="Beerdigungsdienst">Beerdigungsdienst</option>
+          </select>
+        </label>
+        
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 15px; border-radius: 4px;">
+          <strong style="color: #92400e;">ℹ️ Wichtig:</strong>
+          <p style="margin: 5px 0 0 0; color: #78350f; font-size: 14px;">
+            Pro Formular kann nur <strong>eine Tätigkeit</strong> ausgewählt werden. 
+            Falls Sie mehrere Tätigkeiten ausüben, füllen Sie bitte für jede Tätigkeit ein separates Formular aus.
+          </p>
         </div>
       </div>
 
       <!-- ================= MONAT/JAHR ================= -->
 
-      <div class="panel" data-panel-id="monatjahr">
-        <div class="panel__header">
-          <div class="panel__title">Monat/Jahr</div>
-          <button type="button" class="panel__toggle" aria-expanded="true">▼</button>
-        </div>
-        <div class="panel__content">
-
-          <label>Monat/Jahr
-            <select name="Monat/Jahr" id="monatjahr_input" required></select>
-          </label>
-
-        </div>
+      <div class="form-section">
+        <h3 class="form-section__title">Monat/Jahr</h3>
+        <label>Monat/Jahr
+          <select name="Monat/Jahr" id="monatjahr_input" required></select>
+        </label>
       </div>
 
       <datalist id="orte_datalist"></datalist>

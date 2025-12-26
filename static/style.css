@@ -444,6 +444,27 @@ input:hover:not(:focus), select:hover:not(:focus), textarea:hover:not(:focus) {
   to { transform: rotate(360deg); }
 }
 
+/* ================= FORM SECTIONS (non-collapsible) ================= */
+.form-section {
+  margin-bottom: 30px;
+  padding-bottom: 25px;
+  border-bottom: 2px solid var(--border);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--primary);
+  display: inline-block;
+}
+
 .actions{
   margin-top: 18px;
   display:flex;
