@@ -61,7 +61,10 @@
   {% if messages %}
     <div class="flash-wrap">
       {% for message in messages %}
-        <div class="flash">{{ message }}</div>
+        <div class="flash">
+          {{ message }}
+          <button class="flash-close" onclick="this.parentElement.classList.add('fade-out'); setTimeout(() => this.parentElement.remove(), 300);" aria-label="Schließen">×</button>
+        </div>
       {% endfor %}
     </div>
   {% endif %}
@@ -480,6 +483,7 @@
   }
 </script>
 
+<script src="{{ url_for('static', filename='flash-auto-dismiss.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/storage.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/ui.js') }}"></script>
 <script src="{{ url_for('static', filename='lib/gd.js') }}"></script>
