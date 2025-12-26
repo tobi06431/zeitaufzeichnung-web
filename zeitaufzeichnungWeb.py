@@ -409,8 +409,24 @@ def admin_submissions():
     # Parse JSON form_data für jede Submission
     for sub in submissions:
         try:
-            sub['form_data_parsed'] = json.loads(sub['form_data'])
-        except:
+            form_data = json.loads(sub['form_data'])
+            sub['form_data_parsed'] = form_data
+            
+            # Parse nested JSON strings (Arbeitszeiten, Gottesdienste)
+            if 'Arbeitszeiten' in form_data and isinstance(form_data['Arbeitszeiten'], str):
+                try:
+                    form_data['Arbeitszeiten'] = json.loads(form_data['Arbeitszeiten'])
+                except:
+                    form_data['Arbeitszeiten'] = []
+            
+            if 'Gottesdienste' in form_data and isinstance(form_data['Gottesdienste'], str):
+                try:
+                    form_data['Gottesdienste'] = json.loads(form_data['Gottesdienste'])
+                except:
+                    form_data['Gottesdienste'] = []
+                    
+        except Exception as e:
+            logger.error(f"Error parsing submission data: {e}")
             sub['form_data_parsed'] = {}
     
     return render_template("admin_submissions.html", submissions=submissions)

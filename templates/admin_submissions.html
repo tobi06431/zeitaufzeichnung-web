@@ -244,8 +244,7 @@
       <!-- ARBEITSZEITEN -->
       <h3 class="section-title">⏰ Arbeitszeiten</h3>
       {% if data.Arbeitszeiten %}
-        {% set az_list = data.Arbeitszeiten | fromjson if data.Arbeitszeiten is string else data.Arbeitszeiten %}
-        {% if az_list and az_list|length > 0 %}
+        {% if data.Arbeitszeiten is iterable and data.Arbeitszeiten is not string and data.Arbeitszeiten|length > 0 %}
           <table class="list-table">
             <thead>
               <tr>
@@ -256,7 +255,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for az in az_list %}
+              {% for az in data.Arbeitszeiten %}
               <tr>
                 <td>{{ loop.index }}</td>
                 <td>{{ az.datum or '-' }}</td>
@@ -276,8 +275,7 @@
       <!-- GOTTESDIENSTE -->
       <h3 class="section-title">⛪ Gottesdienste</h3>
       {% if data.Gottesdienste %}
-        {% set gd_list = data.Gottesdienste | fromjson if data.Gottesdienste is string else data.Gottesdienste %}
-        {% if gd_list and gd_list|length > 0 %}
+        {% if data.Gottesdienste is iterable and data.Gottesdienste is not string and data.Gottesdienste|length > 0 %}
           <table class="list-table">
             <thead>
               <tr>
@@ -290,7 +288,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for gd in gd_list %}
+              {% for gd in data.Gottesdienste %}
               <tr>
                 <td>{{ loop.index }}</td>
                 <td>{{ gd.kirchort or '-' }}</td>
