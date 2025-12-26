@@ -103,7 +103,7 @@
         <div class="panel__content">
 
           <label>Tätigkeit
-            <select name="Tätigkeit" id="taetigkeit_input">
+            <select name="Tätigkeit" id="taetigkeit_input" required>
               <option value="">-- auswählen --</option>
               <option value="Verwaltungskraft">Verwaltungskraft</option>
               <option value="Organist">Organist</option>
@@ -118,6 +118,14 @@
               <option value="Beerdigungsdienst">Beerdigungsdienst</option>
             </select>
           </label>
+          
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 15px; border-radius: 4px;">
+            <strong style="color: #92400e;">ℹ️ Wichtig:</strong>
+            <p style="margin: 5px 0 0 0; color: #78350f; font-size: 14px;">
+              Pro Formular kann nur <strong>eine Tätigkeit</strong> ausgewählt werden. 
+              Falls Sie mehrere Tätigkeiten ausüben, füllen Sie bitte für jede Tätigkeit ein separates Formular aus.
+            </p>
+          </div>
 
         </div>
       </div>
