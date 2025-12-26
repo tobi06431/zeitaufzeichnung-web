@@ -72,6 +72,11 @@
       padding: 20px;
       margin-bottom: 30px;
       page-break-inside: avoid;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .submission-card:hover {
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     }
     .submission-header {
       display: flex;
@@ -80,6 +85,49 @@
       padding-bottom: 15px;
       border-bottom: 2px solid #e5e7eb;
       margin-bottom: 20px;
+      position: relative;
+    }
+    .toggle-icon {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 24px;
+      color: #2563eb;
+      transition: transform 0.3s;
+    }
+    .submission-card.expanded .toggle-icon {
+      transform: translateY(-50%) rotate(180deg);
+    }
+    .submission-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .summary-value {
+      font-size: 15px;
+      color: #111827;
+      font-weight: 600;
+    }
+    .submission-details {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .submission-card.expanded .submission-details {
+      display: block;
     }
     .submission-meta {
       display: grid;
@@ -134,19 +182,47 @@
       font-size: 13px;
       color: #111827;
     }
-    .data-value.empty {
-      color: #9ca3af;
-      font-style: italic;
-    }
-    .list-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 10px 0 20px 0;
-      font-size: 12px;
-    }
-    .list-table th {
-      background: #f3f4f6;
-      color: #374151;
+    .data-value.empty { onclick="toggleCard(this)">
+      
+      <!-- HEADER -->
+      <div class="submission-header">
+        <div>
+          <h2 style="margin: 0; color: #111827;">{{ sub.username }}</h2>
+          <p style="margin: 5px 0 0 0; color: #6b7280;">{{ sub.email }}</p>
+        </div>
+        <div style="text-align: right; padding-right: 40px;">
+          <div style="font-size: 20px; font-weight: 700; color: #2563eb;">{{ sub.month_year }}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Eingereicht: {{ sub.submitted_at }}</div>
+        </div>
+        <div class="toggle-icon">▼</div>
+      </div>
+
+      <!-- ZUSAMMENFASSUNG (immer sichtbar) -->
+      <div class="submission-summary">
+        <div class="summary-item">
+          <div class="summary-label">Vorname</div>
+          <div class="summary-value">{{ data.Vorname or '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Nachname</div>
+          <div class="summary-value">{{ data.Nachname or '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Pfarrei</div>
+          <div class="summary-value">{{ data['Kath. Kirchengemeinde'] or '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Tätigkeit</div>
+          <div class="summary-value">{{ data['Tätigkeit'] or '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Monat/Jahr</div>
+          <div class="summary-value">{{ data['Monat/Jahr'] or '-' }}</div>
+        </div>
+      </div>
+
+      <!-- DETAILS (eingeklappt) -->
+      <div class="submission-details": #374151;
       padding: 8px;
       text-align: left;
       font-weight: 600;
@@ -342,10 +418,18 @@
         </div>
       </div>
 
+      </div><!-- Ende submission-details -->
+
     </div>
     {% endfor %}
   {% endif %}
 </div>
+
+<script>
+function toggleCard(card) {
+  card.classList.toggle('expanded');
+}
+</script>
 
 </body>
 </html>
