@@ -8,3 +8,5 @@ users.db
 # Temporäre Dateien
 *.pdf
 *.csv
+backup_*.json
+test_backup.json
