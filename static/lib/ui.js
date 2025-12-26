@@ -153,6 +153,33 @@ function enforce5MinuteStep(el) {
   if (r && r !== el.value) el.value = r;
 }
 
+// Calculate hours between two times
+function calculateHours(startTime, endTime) {
+  if (!startTime || !endTime) return 0;
+  
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  
+  let hours = endH - startH;
+  let minutes = endM - startM;
+  
+  // Handle overnight shifts or negative minutes
+  if (minutes < 0) {
+    hours--;
+    minutes += 60;
+  }
+  if (hours < 0) {
+    hours += 24;
+  }
+  
+  return hours + (minutes / 60);
+}
+
+// Format hours for display
+function formatHours(hours) {
+  return hours.toFixed(2).replace('.', ',') + ' h';
+}
+
 function formatTime(h, m) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
@@ -238,6 +265,7 @@ function renderGottesdienste(list) {
       else badgeClass = "badge--high";
     }
     const satzHtml = `<span class="badge ${badgeClass}">${gd.satz || "–"}</span>`;
+    const hours = calculateHours(gd.beginn, gd.ende);
 
     row.innerHTML = `
       <td>${gd.kirchort}</td>
@@ -245,10 +273,18 @@ function renderGottesdienste(list) {
       <td>${satzHtml}</td>
       <td>${gd.beginn}</td>
       <td>${gd.ende}</td>
+      <td class="hours-cell">${formatHours(hours)}</td>
       <td><button type="button" onclick="removeGottesdienst(${i})">X</button></td>
     `;
     tbody.appendChild(row);
   });
+
+  // Calculate total hours
+  const totalHours = list.reduce((sum, gd) => sum + calculateHours(gd.beginn, gd.ende), 0);
+  const totalCell = document.getElementById('gd_total_hours');
+  if (totalCell) {
+    totalCell.textContent = formatHours(totalHours);
+  }
 
   const hidden = document.getElementById('gottesdienste_json');
   if (hidden) hidden.value = JSON.stringify(list);
@@ -337,6 +373,8 @@ function renderArbeitszeiten(list) {
     return 0;
   });
 
+  let totalHours = 0;
+  
   list.forEach((az, i) => {
     const row = document.createElement("tr");
 
@@ -346,14 +384,24 @@ function renderArbeitszeiten(list) {
       if (day === 0 || day === 6) row.classList.add("weekend");
     } catch (e) {}
 
+    const hours = calculateHours(az.beginn, az.ende);
+    totalHours += hours;
+
     row.innerHTML = `
       <td>${az.datum}</td>
       <td>${az.beginn}</td>
       <td>${az.ende}</td>
+      <td class="hours-cell">${formatHours(hours)}</td>
       <td><button type="button" onclick="removeArbeitszeit(${i})">X</button></td>
     `;
     tbody.appendChild(row);
   });
+
+  // Update total
+  const totalCell = document.getElementById('az_total_hours');
+  if (totalCell) {
+    totalCell.textContent = formatHours(totalHours);
+  }
 
   const hidden = document.getElementById('arbeitszeiten_json');
   if (hidden) hidden.value = JSON.stringify(list);

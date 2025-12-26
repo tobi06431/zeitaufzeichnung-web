@@ -700,6 +700,26 @@ tbody tr.weekend{
   background: #fff9f0;
 }
 
+/* Stunden-Spalte */
+.hours-cell {
+  font-weight: 600;
+  color: var(--primary);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Gesamtsummen-Zeile */
+tfoot .total-row {
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+  border-top: 2px solid var(--primary);
+  font-size: 15px;
+}
+
+tfoot .total-row td {
+  padding: 14px 10px;
+  border-bottom: none;
+}
+
 /* Besoldungssatz Badges */
 .badge{
   display:inline-block;
