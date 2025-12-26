@@ -409,6 +409,7 @@ def admin_submissions():
     per_page = request.args.get('per_page', 20, type=int)
     search = request.args.get('search', '').strip().lower()
     month_filter = request.args.get('month', '').strip()
+    taetigkeit_filter = request.args.get('taetigkeit', '').strip()
     sort_by = request.args.get('sort', 'date_desc')
     
     submissions = get_all_submitted_timerecords()
@@ -451,6 +452,10 @@ def admin_submissions():
         if month_filter and sub.get('month_year', '') != month_filter:
             continue
         
+        # Tätigkeitsfilter
+        if taetigkeit_filter and data.get('Tätigkeit', '') != taetigkeit_filter:
+            continue
+        
         filtered_submissions.append(sub)
     
     # Sortierung
@@ -472,8 +477,9 @@ def admin_submissions():
     end = start + per_page
     paginated_submissions = filtered_submissions[start:end]
     
-    # Verfügbare Monate für Filter
+    # Verfügbare Monate und Tätigkeiten für Filter
     available_months = sorted(list(set(sub.get('month_year', '') for sub in submissions if sub.get('month_year'))), reverse=True)
+    available_taetigkeiten = sorted(list(set(sub['form_data_parsed'].get('Tätigkeit', '') for sub in submissions if sub['form_data_parsed'].get('Tätigkeit'))))
     
     return render_template("admin_submissions.html", 
                          submissions=paginated_submissions,
@@ -483,8 +489,10 @@ def admin_submissions():
                          per_page=per_page,
                          search=search,
                          month_filter=month_filter,
+                         taetigkeit_filter=taetigkeit_filter,
                          sort_by=sort_by,
-                         available_months=available_months)
+                         available_months=available_months,
+                         available_taetigkeiten=available_taetigkeiten)
 
 
 @app.route("/", methods=["GET", "POST"])

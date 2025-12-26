@@ -323,6 +323,15 @@
       {% endfor %}
     </select>
     
+    <select name="taetigkeit">
+      <option value="">Alle Tätigkeiten</option>
+      {% for taetigkeit in available_taetigkeiten %}
+      <option value="{{ taetigkeit }}" {% if taetigkeit_filter == taetigkeit %}selected{% endif %}>
+        {{ taetigkeit }}
+      </option>
+      {% endfor %}
+    </select>
+    
     <select name="sort">
       <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Neueste zuerst</option>
       <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Älteste zuerst</option>
@@ -342,8 +351,8 @@
     </div>
     <div class="pagination">
       {% if page > 1 %}
-        <a href="?page=1&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">« Erste</a>
-        <a href="?page={{ page - 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">‹ Zurück</a>
+        <a href="?page=1&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">« Erste</a>
+        <a href="?page={{ page - 1 }}&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">‹ Zurück</a>
       {% else %}
         <span class="disabled">« Erste</span>
         <span class="disabled">‹ Zurück</span>
@@ -352,8 +361,8 @@
       <span class="current">{{ page }}</span>
       
       {% if page < total_pages %}
-        <a href="?page={{ page + 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Weiter ›</a>
-        <a href="?page={{ total_pages }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Letzte »</a>
+        <a href="?page={{ page + 1 }}&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">Weiter ›</a>
+        <a href="?page={{ total_pages }}&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">Letzte »</a>
       {% else %}
         <span class="disabled">Weiter ›</span>
         <span class="disabled">Letzte »</span>
@@ -420,8 +429,8 @@
       </div>
       <div class="pagination">
         {% if page > 1 %}
-          <a href="?page=1&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">« Erste</a>
-          <a href="?page={{ page - 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">‹ Zurück</a>
+          <a href="?page=1&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">« Erste</a>
+          <a href="?page={{ page - 1 }}&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">‹ Zurück</a>
         {% else %}
           <span class="disabled">« Erste</span>
           <span class="disabled">‹ Zurück</span>
@@ -430,8 +439,8 @@
         <span class="current">{{ page }}</span>
         
         {% if page < total_pages %}
-          <a href="?page={{ page + 1 }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Weiter ›</a>
-          <a href="?page={{ total_pages }}&search={{ search }}&month={{ month_filter }}&sort={{ sort_by }}">Letzte »</a>
+          <a href="?page={{ page + 1 }}&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">Weiter ›</a>
+          <a href="?page={{ total_pages }}&search={{ search }}&month={{ month_filter }}&taetigkeit={{ taetigkeit_filter }}&sort={{ sort_by }}">Letzte »</a>
         {% else %}
           <span class="disabled">Weiter ›</span>
           <span class="disabled">Letzte »</span>
