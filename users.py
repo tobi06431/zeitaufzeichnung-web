@@ -65,7 +65,8 @@ def get_db():
         conn.commit()
     except Exception as e:
         conn.rollback()
-        raise e
+        logger.error(f"Datenbankfehler: {e}")
+        raise
     finally:
         cursor.close()
         # Connection zurück zum Pool (nur bei PostgreSQL mit Pooling)
@@ -73,10 +74,6 @@ def get_db():
             connection_pool.putconn(conn)
         else:
             conn.close()
-        logger.error(f"Datenbankfehler: {e}")
-        raise
-    finally:
-        conn.close()
 
 
 class User(UserMixin):
