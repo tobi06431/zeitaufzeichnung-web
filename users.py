@@ -18,22 +18,39 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     # PostgreSQL für Production (Render)
     import psycopg2
+    from psycopg2 import pool
     from psycopg2.extras import RealDictCursor
     USE_POSTGRES = True
     # Render gibt manchmal postgres:// statt postgresql:// - fix das
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    
+    # Connection Pool für bessere Performance (5-20 Connections)
+    try:
+        connection_pool = pool.ThreadedConnectionPool(
+            minconn=5,
+            maxconn=20,
+            dsn=DATABASE_URL
+        )
+        logger.info("PostgreSQL Connection Pool erstellt (5-20 Connections)")
+    except Exception as e:
+        logger.error(f"Connection Pool Fehler: {e}")
+        connection_pool = None
 else:
     # SQLite für lokale Entwicklung
     import sqlite3
     USE_POSTGRES = False
     DATABASE = 'users.db'
+    connection_pool = None
 
 
 def get_db_connection():
-    """Erstellt Datenbankverbindung (PostgreSQL oder SQLite)"""
+    """Erstellt Datenbankverbindung (PostgreSQL mit Pooling oder SQLite)"""
     if USE_POSTGRES:
-        return psycopg2.connect(DATABASE_URL)
+        if connection_pool:
+            return connection_pool.getconn()
+        else:
+            return psycopg2.connect(DATABASE_URL)
     else:
         return sqlite3.connect(DATABASE)
 
@@ -48,6 +65,14 @@ def get_db():
         conn.commit()
     except Exception as e:
         conn.rollback()
+        raise e
+    finally:
+        cursor.close()
+        # Connection zurück zum Pool (nur bei PostgreSQL mit Pooling)
+        if USE_POSTGRES and connection_pool:
+            connection_pool.putconn(conn)
+        else:
+            conn.close()
         logger.error(f"Datenbankfehler: {e}")
         raise
     finally:
