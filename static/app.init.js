@@ -90,6 +90,9 @@ async function init() {
   window.initPanels && window.initPanels();
   
   // ===== JETZT: Daten vom Server laden (nachdem alles initialisiert ist) =====
+  // WICHTIG: Warte kurz, damit monatjahr_input initialisiert ist
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
   const dataLoaded = await window.loadAllFormData();
   if (dataLoaded) {
     console.log('✅ Formulardaten vom Server geladen - Listen aktualisiert');
