@@ -1,34 +1,15 @@
-/* Gottesdienst-Logik: list management, storage key */
+/* Gottesdienst-Logik: list management (SERVER-BASIERT) */
 
-let gottesdienste = [];
-let currentStorageKey = "";
-
-function getStorageKey() {
-  const p = window.getSelectedPfarrei ? window.getSelectedPfarrei() : (document.getElementById('kirchengemeinde_input')?.value || 'UNBEKANNT_PFARREI');
-  const mEl = document.getElementById('monatjahr_input');
-  const m = (mEl && mEl.value) ? mEl.value.trim() : 'OHNE_MONAT';
-  const tEl = document.getElementById('taetigkeit_input');
-  const t = (tEl && tEl.value) ? tEl.value.trim() : 'OHNE_TAETIGKEIT';
-  return `za_gd_v2|${p}|${m}|${t}`;
-}
+// Direkt im window-Objekt speichern (keine LocalStorage-Keys mehr!)
+if (!window.gottesdienste) window.gottesdienste = [];
 
 function saveGottesdienste() {
-  if (currentStorageKey) {
-    localStorage.setItem(currentStorageKey, JSON.stringify(gottesdienste));
-    // Trigger Server-Sync
-    window.triggerSave && window.triggerSave();
-  }
-}
-
-function loadGottesdienste() {
-  try {
-    const raw = localStorage.getItem(currentStorageKey);
-    gottesdienste = raw ? JSON.parse(raw) : [];
-  } catch { gottesdienste = []; }
+  // Direkt zum Server - keine LocalStorage-Zwischenspeicherung
+  window.triggerSave && window.triggerSave();
 }
 
 function updateListe() {
-  window.renderGottesdienste && window.renderGottesdienste(gottesdienste);
+  window.renderGottesdienste && window.renderGottesdienste(window.gottesdienste);
   window.updateSummary && window.updateSummary();
 }
 
@@ -66,8 +47,7 @@ function addGottesdienst() {
     return;
   }
 
-  gottesdienste.push(gd);
-  window.gottesdienste = gottesdienste; // Array aktualisieren
+  window.gottesdienste.push(gd);
   window.saveTimesForEntry && window.saveTimesForEntry(gd.kirchort, gd.datum, gd.beginn, gd.ende, gd.satz);
   saveGottesdienste();
   updateListe();
@@ -80,39 +60,20 @@ function addGottesdienst() {
 }
 
 function removeGottesdienst(i) {
-  gottesdienste.splice(i, 1);
-  window.gottesdienste = gottesdienste; // Array aktualisieren
+  window.gottesdienste.splice(i, 1);
   saveGottesdienste();
   updateListe();
 }
 
 function clearGottesdienste() {
   if (!confirm("Alle Gottesdienste dieser Aufzeichnung löschen?")) return;
-  gottesdienste = [];
-  window.gottesdienste = gottesdienste; // Array aktualisieren
-  saveGottesdienste(); // Speichert leere Liste (wichtig für Sync!)
+  window.gottesdienste = [];
+  saveGottesdienste();
   updateListe();
-}
-
-function handleContextChange() {
-  const newKey = getStorageKey();
-  if (newKey === currentStorageKey) return;
-  if (currentStorageKey) saveGottesdienste();
-  currentStorageKey = newKey;
-  loadGottesdienste();
-  window.gottesdienste = gottesdienste; // Array aktualisieren
-  updateListe();
-  window.applyDateRestrictionSilently && window.applyDateRestrictionSilently();
 }
 
 // expose
 window.addGottesdienst = addGottesdienst;
 window.removeGottesdienst = removeGottesdienst;
 window.clearGottesdienste = clearGottesdienste;
-window.handleContextChange = handleContextChange;
-window.loadGottesdienste = loadGottesdienste;
-window.getGottesdienste = () => gottesdienste;
-window.gottesdienste = gottesdienste; // für direkten Zugriff
-window.setCurrentStorageKey = (k) => { currentStorageKey = k; };
-window.getStorageKey = getStorageKey;
-
+window.updateListe = updateListe;

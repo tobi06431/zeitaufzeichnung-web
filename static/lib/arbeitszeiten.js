@@ -1,34 +1,15 @@
-/* Arbeitszeiten-Logik: list management, storage key */
+/* Arbeitszeiten-Logik: list management (SERVER-BASIERT) */
 
-let arbeitszeiten = [];
-let currentAZStorageKey = "";
-
-function getAZStorageKey() {
-  const p = window.getSelectedPfarrei ? window.getSelectedPfarrei() : (document.getElementById('kirchengemeinde_input')?.value || 'UNBEKANNT_PFARREI');
-  const mEl = document.getElementById('monatjahr_input');
-  const m = (mEl && mEl.value) ? mEl.value.trim() : 'OHNE_MONAT';
-  const tEl = document.getElementById('taetigkeit_input');
-  const t = (tEl && tEl.value) ? tEl.value.trim() : 'OHNE_TAETIGKEIT';
-  return `za_az_v1|${p}|${m}|${t}`;
-}
+// Direkt im window-Objekt speichern (keine LocalStorage-Keys mehr!)
+if (!window.arbeitszeiten) window.arbeitszeiten = [];
 
 function saveArbeitszeiten() {
-  if (currentAZStorageKey) {
-    localStorage.setItem(currentAZStorageKey, JSON.stringify(arbeitszeiten));
-    // Trigger Server-Sync
-    window.triggerSave && window.triggerSave();
-  }
-}
-
-function loadArbeitszeiten() {
-  try {
-    const raw = localStorage.getItem(currentAZStorageKey);
-    arbeitszeiten = raw ? JSON.parse(raw) : [];
-  } catch { arbeitszeiten = []; }
+  // Direkt zum Server - keine LocalStorage-Zwischenspeicherung
+  window.triggerSave && window.triggerSave();
 }
 
 function updateAZListe() {
-  window.renderArbeitszeiten && window.renderArbeitszeiten(arbeitszeiten);
+  window.renderArbeitszeiten && window.renderArbeitszeiten(window.arbeitszeiten);
   window.updateSummary && window.updateSummary();
 }
 
@@ -62,8 +43,7 @@ function addArbeitszeit() {
     return;
   }
 
-  arbeitszeiten.push(az);
-  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
+  window.arbeitszeiten.push(az);
   saveArbeitszeiten();
   updateAZListe();
 
@@ -73,27 +53,15 @@ function addArbeitszeit() {
 }
 
 function removeArbeitszeit(i) {
-  arbeitszeiten.splice(i, 1);
-  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
+  window.arbeitszeiten.splice(i, 1);
   saveArbeitszeiten();
   updateAZListe();
 }
 
 function clearArbeitszeiten() {
   if (!confirm("Alle Arbeitszeiten dieser Aufzeichnung löschen?")) return;
-  arbeitszeiten = [];
-  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
-  saveArbeitszeiten(); // Speichert leere Liste (wichtig für Sync!)
-  updateAZListe();
-}
-
-function handleAZContextChange() {
-  const newKey = getAZStorageKey();
-  if (newKey === currentAZStorageKey) return;
-  if (currentAZStorageKey) saveArbeitszeiten();
-  currentAZStorageKey = newKey;
-  loadArbeitszeiten();
-  window.arbeitszeiten = arbeitszeiten; // Array aktualisieren
+  window.arbeitszeiten = [];
+  saveArbeitszeiten();
   updateAZListe();
 }
 
@@ -101,9 +69,4 @@ function handleAZContextChange() {
 window.addArbeitszeit = addArbeitszeit;
 window.removeArbeitszeit = removeArbeitszeit;
 window.clearArbeitszeiten = clearArbeitszeiten;
-window.handleAZContextChange = handleAZContextChange;
-window.loadArbeitszeiten = loadArbeitszeiten;
-window.getArbeitszeiten = () => arbeitszeiten;
-window.arbeitszeiten = arbeitszeiten; // für direkten Zugriff
-window.setCurrentAZStorageKey = (k) => { currentAZStorageKey = k; };
-window.getAZStorageKey = getAZStorageKey;
+window.updateAZListe = updateAZListe;

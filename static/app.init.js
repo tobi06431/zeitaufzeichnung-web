@@ -1,20 +1,16 @@
 /* Bootstrap: init wiring */
 
 async function init() {
-  // ===== ERST: Normale Initialisierung (Storage-Keys setzen) =====
+  // ===== Initialisierung =====
   window.populateMonatJahrSelect && window.populateMonatJahrSelect();
   window.updateOrtSuggestions && window.updateOrtSuggestions();
 
-  // set up gottesdienste context
-  const currentKey = window.getStorageKey ? window.getStorageKey() : '';
-  window.setCurrentStorageKey && window.setCurrentStorageKey(currentKey);
-  window.loadGottesdienste && window.loadGottesdienste();
-  window.updateListe && window.updateListe(); // if present
+  // Initialisiere Arrays
+  if (!window.gottesdienste) window.gottesdienste = [];
+  if (!window.arbeitszeiten) window.arbeitszeiten = [];
 
-  // set up arbeitszeiten context
-  const currentAZKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
-  window.setCurrentAZStorageKey && window.setCurrentAZStorageKey(currentAZKey);
-  window.loadArbeitszeiten && window.loadArbeitszeiten();
+  // Initiale Render (leere Listen)
+  window.updateListe && window.updateListe();
   window.updateAZListe && window.updateAZListe();
 
   window.applyDateRestrictionSilently && window.applyDateRestrictionSilently();

@@ -29,7 +29,7 @@ function getSelectedMonthYear() {
   return getCurrentMonthYear();
 }
 
-// ========== SERVER-BASIERTE SPEICHERUNG ==========
+// ========== SERVER-BASIERTE SPEICHERUNG (OHNE LocalStorage für Daten) ==========
 
 async function saveAllFormData() {
   const monthYear = getSelectedMonthYear();
@@ -42,34 +42,15 @@ async function saveAllFormData() {
     }
   });
   
-  // WICHTIG: Auch die gespeicherten Listen (Gottesdienste & Arbeitszeiten) übertragen
-  const storageKey = window.getStorageKey ? window.getStorageKey() : '';
-  console.log('🔑 Gottesdienste Storage-Key beim Speichern:', storageKey);
-  if (storageKey) {
-    const gottesdiensteData = localStorage.getItem(storageKey);
-    console.log('📦 Gottesdienste-Daten gefunden:', gottesdiensteData ? 'JA' : 'NEIN', gottesdiensteData ? JSON.parse(gottesdiensteData).length : 0);
-    if (gottesdiensteData) {
-      formData['_gottesdienste_list'] = gottesdiensteData;
-    }
+  // Listen direkt aus window-Objekten holen (nicht aus LocalStorage!)
+  if (window.gottesdienste && window.gottesdienste.length > 0) {
+    formData['_gottesdienste_list'] = JSON.stringify(window.gottesdienste);
+    console.log('📦 Gottesdienste zum Speichern:', window.gottesdienste.length);
   }
   
-  const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
-  console.log('🔑 Arbeitszeiten Storage-Key beim Speichern:', azKey);
-  if (azKey) {
-    const arbeitszeitenData = localStorage.getItem(azKey);
-    console.log('📦 Arbeitszeiten-Daten gefunden:', arbeitszeitenData ? 'JA' : 'NEIN', arbeitszeitenData ? JSON.parse(arbeitszeitenData).length : 0);
-    if (arbeitszeitenData) {
-      formData['_arbeitszeiten_list'] = arbeitszeitenData;
-    }
-  }
-  
-  // Times-Map auch speichern
-  const timesKey = getTimesStorageKey();
-  if (timesKey) {
-    const timesData = localStorage.getItem(timesKey);
-    if (timesData) {
-      formData['_times_map'] = timesData;
-    }
+  if (window.arbeitszeiten && window.arbeitszeiten.length > 0) {
+    formData['_arbeitszeiten_list'] = JSON.stringify(window.arbeitszeiten);
+    console.log('📦 Arbeitszeiten zum Speichern:', window.arbeitszeiten.length);
   }
   
   console.log('💾 Speichere Daten:', { monthYear, fieldCount: Object.keys(formData).length });
@@ -109,133 +90,73 @@ async function loadAllFormData() {
     const response = await fetch(`/api/timerecords/${monthYear}`);
     const result = await response.json();
     
-    if (result.success && result.record) {
-      const serverTimestamp = result.record.updated_at;
-      const timestampKey = `za_timestamp_${monthYear}`;
-      const localTimestamp = localStorage.getItem(timestampKey);
-      
-      // Vergleiche Timestamps
-      const serverDate = serverTimestamp ? new Date(serverTimestamp) : new Date(0);
-      const localDate = localTimestamp ? new Date(localTimestamp) : new Date(0);
-      
-      // Nur überspringen wenn lokaler Timestamp SEHR frisch ist (< 5 Sekunden alt)
-      // Das bedeutet: User arbeitet gerade aktiv an diesem Gerät
-      const now = new Date();
-      const localAge = now - localDate; // Millisekunden
-      
-      if (localDate > serverDate && localAge < 5000) {
-        console.log('⚠️ Lokale Daten sind sehr frisch (< 5 Sek) - überspringe Laden');
-        console.log(`   Lokal: ${localTimestamp}, Server: ${serverTimestamp}, Alter: ${Math.round(localAge/1000)}s`);
-        // Trigger Save um lokale Daten zum Server zu pushen
-        setTimeout(() => saveAllFormData(), 1000);
-        return false;
+    if (!result.success || !result.record) {
+      console.log('ℹ️ Keine gespeicherten Daten gefunden');
+      return false;
+    }
+    
+    console.log('✅ Server-Daten gefunden');
+    const formData = JSON.parse(result.record.form_data);
+    
+    console.log('✅ Daten geladen:', { 
+      fieldCount: Object.keys(formData).length,
+      hasGottesdienste: '_gottesdienste_list' in formData,
+      hasArbeitszeiten: '_arbeitszeiten_list' in formData
+    });
+    
+    // Formulardaten wiederherstellen
+    Object.keys(formData).forEach(name => {
+      // Listen-Daten
+      if (name === '_gottesdienste_list') {
+        try {
+          window.gottesdienste = JSON.parse(formData[name]);
+          console.log('✅ Gottesdienste geladen:', window.gottesdienste.length);
+          // Rendern
+          window.updateListe && window.updateListe();
+        } catch (e) {
+          console.error('❌ Fehler beim Laden der Gottesdienste:', e);
+          window.gottesdienste = [];
+        }
+        return;
       }
       
-      console.log('✅ Lade Daten vom Server (Server neuer oder lokale Daten veraltet)');
-      console.log(`   Server: ${serverTimestamp}, Lokal: ${localTimestamp || 'keine'}, Lokal-Alter: ${Math.round(localAge/1000)}s`);
-      
-      const formData = JSON.parse(result.record.form_data);
-      
-      console.log('✅ Daten geladen:', { 
-        fieldCount: Object.keys(formData).length,
-        hasGottesdienste: '_gottesdienste_list' in formData,
-        hasArbeitszeiten: '_arbeitszeiten_list' in formData,
-        fields: Object.keys(formData)
-      });
-      
-      // WICHTIG: Erst normale Felder befüllen (Pfarrei, Tätigkeit, Monat)
-      // DANN Listen, weil Storage-Keys von diesen Feldern abhängen!
-      const normalFields = [];
-      const listFields = [];
-      
-      Object.keys(formData).forEach(name => {
-        if (name.startsWith('_')) {
-          listFields.push(name);
-        } else {
-          normalFields.push(name);
+      if (name === '_arbeitszeiten_list') {
+        try {
+          window.arbeitszeiten = JSON.parse(formData[name]);
+          console.log('✅ Arbeitszeiten geladen:', window.arbeitszeiten.length);
+          // Rendern
+          window.updateAZListe && window.updateAZListe();
+        } catch (e) {
+          console.error('❌ Fehler beim Laden der Arbeitszeiten:', e);
+          window.arbeitszeiten = [];
         }
-      });
+        return;
+      }
       
-      // PHASE 1: Normale Formularfelder befüllen
-      normalFields.forEach(name => {
-        const el = document.getElementById(name);
-        if (el) {
-          el.value = formData[name];
-          // Trigger change event für abhängige Logik (Storage-Keys etc.)
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      });
+      // Normale Formularfelder
+      const el = document.getElementById(name) || document.querySelector(`[name="${name}"]`);
+      if (el) {
+        el.value = formData[name];
+        // Trigger Events um abhängige Logik zu aktualisieren
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    
+    // Zusammenfassung aktualisieren
+    window.updateSummary && window.updateSummary();
+    
+    // Timestamp speichern
+    const timestampKey = `za_timestamp_${monthYear}`;
+    localStorage.setItem(timestampKey, result.record.updated_at);
+    
+    console.log('✅ Alle Daten vom Server geladen');
+    return true;
       
-      console.log('✅ Normale Felder befüllt, Storage-Keys sollten jetzt korrekt sein');
-      
-      // PHASE 2: Listen-Daten verarbeiten (jetzt mit korrekten Keys!)
-      listFields.forEach(name => {
-        if (name === '_gottesdienste_list') {
-          const storageKey = window.getStorageKey ? window.getStorageKey() : '';
-          console.log('🔑 Gottesdienste Storage-Key:', storageKey);
-          if (storageKey) {
-            localStorage.setItem(storageKey, formData[name]);
-            console.log('✅ Gottesdienste wiederhergestellt');
-            // Listen neu laden (lädt aus LocalStorage in internen Array)
-            window.loadGottesdienste && window.loadGottesdienste();
-            // Aktualisiere auch window.gottesdienste für Zusammenfassung
-            try {
-              window.gottesdienste = JSON.parse(formData[name]);
-            } catch (e) {
-              window.gottesdienste = [];
-            }
-            // Rendern
-            window.updateListe && window.updateListe();
-          }
-          return;
-        }
-        
-        if (name === '_arbeitszeiten_list') {
-          const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
-          console.log('🔑 Arbeitszeiten Storage-Key:', azKey);
-          if (azKey) {
-            localStorage.setItem(azKey, formData[name]);
-            console.log('✅ Arbeitszeiten wiederhergestellt');
-            // Listen neu laden (lädt aus LocalStorage in internen Array)
-            window.loadArbeitszeiten && window.loadArbeitszeiten();
-            // Aktualisiere auch window.arbeitszeiten für Zusammenfassung
-            try {
-              window.arbeitszeiten = JSON.parse(formData[name]);
-            } catch (e) {
-              window.arbeitszeiten = [];
-            }
-            // Rendern
-            window.updateAZListe && window.updateAZListe();
-          }
-          return;
-        }
-        
-        if (name === '_times_map') {
-          const timesKey = getTimesStorageKey();
-          if (timesKey) {
-            localStorage.setItem(timesKey, formData[name]);
-            console.log('✅ Times-Map wiederhergestellt');
-          }
-          return;
-        }
-      });
-      
-      // Speichere Server-Timestamp
-      localStorage.setItem(timestampKey, serverTimestamp);
-      
-      console.log('✅ Alle Daten wiederhergestellt, Zusammenfassung aktualisieren');
-      window.updateSummary && window.updateSummary();
-      
-      return true;
-    } else {
-      console.log('ℹ️ Keine gespeicherten Daten gefunden');
-    }
   } catch (error) {
-    console.error('❌ Laden fehlgeschlagen:', error);
+    console.error('❌ Fehler beim Laden:', error);
+    return false;
   }
-  
-  return false;
 }
 
 // Auto-Save alle 30 Sekunden
