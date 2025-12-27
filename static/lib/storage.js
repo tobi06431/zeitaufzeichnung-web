@@ -194,6 +194,11 @@ async function loadAllFormData() {
       // Speichere Server-Timestamp
       localStorage.setItem(timestampKey, serverTimestamp);
       
+      // WICHTIG: Context neu laden nachdem Formularfelder aktualisiert wurden
+      // Damit werden die Storage-Keys basierend auf den geladenen Werten neu berechnet
+      window.handleContextChange && window.handleContextChange();
+      window.handleAZContextChange && window.handleAZContextChange();
+      
       return true;
     } else {
       console.log('ℹ️ Keine gespeicherten Daten gefunden');
