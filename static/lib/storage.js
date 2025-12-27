@@ -203,11 +203,6 @@ function triggerSave() {
   saveTimeout = setTimeout(() => {
     saveAllFormData();
   }, 2000); // 2 Sekunden nach letzter Änderung
-  
-  // Aktualisiere lokalen Timestamp sofort bei jeder Änderung
-  const monthYear = getSelectedMonthYear();
-  const timestampKey = `za_timestamp_${monthYear}`;
-  localStorage.setItem(timestampKey, new Date().toISOString());
 }
 
 // ========== LEGACY: Profil-Felder (weiterhin LocalStorage für schnelle UI) ==========
