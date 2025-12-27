@@ -134,11 +134,36 @@ async function loadAllFormData() {
       
       console.log('✅ Daten geladen:', { fieldCount: Object.keys(formData).length });
       
-      // Formulardaten wiederherstellen
+      // WICHTIG: Erst normale Felder befüllen (Pfarrei, Tätigkeit, Monat)
+      // DANN Listen, weil Storage-Keys von diesen Feldern abhängen!
+      const normalFields = [];
+      const listFields = [];
+      
       Object.keys(formData).forEach(name => {
-        // Spezielle Listen-Daten zurück in LocalStorage
+        if (name.startsWith('_')) {
+          listFields.push(name);
+        } else {
+          normalFields.push(name);
+        }
+      });
+      
+      // PHASE 1: Normale Formularfelder befüllen
+      normalFields.forEach(name => {
+        const el = document.getElementById(name);
+        if (el) {
+          el.value = formData[name];
+          // Trigger change event für abhängige Logik
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      
+      console.log('✅ Normale Felder befüllt, Storage-Keys sollten jetzt korrekt sein');
+      
+      // PHASE 2: Listen-Daten verarbeiten (jetzt mit korrekten Keys!)
+      listFields.forEach(name => {
         if (name === '_gottesdienste_list') {
           const storageKey = window.getStorageKey ? window.getStorageKey() : '';
+          console.log('🔑 Gottesdienste Storage-Key:', storageKey);
           if (storageKey) {
             localStorage.setItem(storageKey, formData[name]);
             console.log('✅ Gottesdienste wiederhergestellt');
@@ -158,6 +183,7 @@ async function loadAllFormData() {
         
         if (name === '_arbeitszeiten_list') {
           const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
+          console.log('🔑 Arbeitszeiten Storage-Key:', azKey);
           if (azKey) {
             localStorage.setItem(azKey, formData[name]);
             console.log('✅ Arbeitszeiten wiederhergestellt');
@@ -183,29 +209,13 @@ async function loadAllFormData() {
           }
           return;
         }
-        
-        // Normale Formularfelder
-        const el = document.querySelector(`[name="${name}"]`);
-        if (el) {
-          el.value = formData[name];
-        }
       });
       
       // Speichere Server-Timestamp
       localStorage.setItem(timestampKey, serverTimestamp);
       
-      // WICHTIG: Context neu laden nachdem Formularfelder aktualisiert wurden
-      // Im Privat-Modus müssen wir die Keys neu berechnen UND die Listen rendern
-      // Auch wenn der Key gleich ist (war anfangs leer, ist jetzt noch leer)
-      const gdKey = window.getStorageKey ? window.getStorageKey() : '';
-      window.setCurrentStorageKey && window.setCurrentStorageKey(gdKey);
-      window.loadGottesdienste && window.loadGottesdienste();
-      window.updateListe && window.updateListe();
-      
-      const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
-      window.setCurrentAZStorageKey && window.setCurrentAZStorageKey(azKey);
-      window.loadArbeitszeiten && window.loadArbeitszeiten();
-      window.updateAZListe && window.updateAZListe();
+      console.log('✅ Alle Daten wiederhergestellt, Zusammenfassung aktualisieren');
+      window.updateSummary && window.updateSummary();
       
       return true;
     } else {
