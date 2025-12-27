@@ -195,9 +195,17 @@ async function loadAllFormData() {
       localStorage.setItem(timestampKey, serverTimestamp);
       
       // WICHTIG: Context neu laden nachdem Formularfelder aktualisiert wurden
-      // Damit werden die Storage-Keys basierend auf den geladenen Werten neu berechnet
-      window.handleContextChange && window.handleContextChange();
-      window.handleAZContextChange && window.handleAZContextChange();
+      // Im Privat-Modus müssen wir die Keys neu berechnen UND die Listen rendern
+      // Auch wenn der Key gleich ist (war anfangs leer, ist jetzt noch leer)
+      const gdKey = window.getStorageKey ? window.getStorageKey() : '';
+      window.setCurrentStorageKey && window.setCurrentStorageKey(gdKey);
+      window.loadGottesdienste && window.loadGottesdienste();
+      window.updateListe && window.updateListe();
+      
+      const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
+      window.setCurrentAZStorageKey && window.setCurrentAZStorageKey(azKey);
+      window.loadArbeitszeiten && window.loadArbeitszeiten();
+      window.updateAZListe && window.updateAZListe();
       
       return true;
     } else {
