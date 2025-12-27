@@ -346,7 +346,9 @@ def api_save_timerecord(month_year):
     
     try:
         save_timerecord(current_user.id, month_year, data["form_data"])
-        return {"success": True, "message": "Daten gespeichert"}
+        # Lade Daten zurück um updated_at zu bekommen
+        record = get_timerecord(current_user.id, month_year)
+        return {"success": True, "message": "Daten gespeichert", "updated_at": record['updated_at'] if record else None}
     except Exception as e:
         return {"success": False, "message": str(e)}, 500
 

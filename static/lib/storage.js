@@ -73,7 +73,10 @@ async function saveAllFormData() {
     
     const result = await response.json();
     if (result.success) {
-      console.log('✅ Daten gespeichert');
+      // Speichere Server-Timestamp im LocalStorage
+      const timestampKey = `za_timestamp_${monthYear}`;
+      localStorage.setItem(timestampKey, result.updated_at || new Date().toISOString());
+      console.log('✅ Daten gespeichert, Timestamp:', result.updated_at);
     } else {
       console.error('❌ Fehler beim Speichern:', result.message);
     }
@@ -92,6 +95,25 @@ async function loadAllFormData() {
     const result = await response.json();
     
     if (result.success && result.record) {
+      const serverTimestamp = result.record.updated_at;
+      const timestampKey = `za_timestamp_${monthYear}`;
+      const localTimestamp = localStorage.getItem(timestampKey);
+      
+      // Vergleiche Timestamps
+      const serverDate = serverTimestamp ? new Date(serverTimestamp) : new Date(0);
+      const localDate = localTimestamp ? new Date(localTimestamp) : new Date(0);
+      
+      if (localDate > serverDate) {
+        console.log('⚠️ Lokale Daten sind neuer - überspringe Laden');
+        console.log(`   Lokal: ${localTimestamp}, Server: ${serverTimestamp}`);
+        // Trigger Save um lokale Daten zum Server zu pushen
+        setTimeout(() => saveAllFormData(), 1000);
+        return false;
+      }
+      
+      console.log('✅ Server-Daten sind neuer - lade vom Server');
+      console.log(`   Server: ${serverTimestamp}, Lokal: ${localTimestamp || 'keine'}`);
+      
       const formData = JSON.parse(result.record.form_data);
       
       console.log('✅ Daten geladen:', { fieldCount: Object.keys(formData).length });
@@ -139,6 +161,9 @@ async function loadAllFormData() {
         }
       });
       
+      // Speichere Server-Timestamp
+      localStorage.setItem(timestampKey, serverTimestamp);
+      
       return true;
     } else {
       console.log('ℹ️ Keine gespeicherten Daten gefunden');
@@ -167,6 +192,11 @@ function triggerSave() {
   saveTimeout = setTimeout(() => {
     saveAllFormData();
   }, 2000); // 2 Sekunden nach letzter Änderung
+  
+  // Aktualisiere lokalen Timestamp sofort bei jeder Änderung
+  const monthYear = getCurrentMonthYear();
+  const timestampKey = `za_timestamp_${monthYear}`;
+  localStorage.setItem(timestampKey, new Date().toISOString());
 }
 
 // ========== LEGACY: Profil-Felder (weiterhin LocalStorage für schnelle UI) ==========
