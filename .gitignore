@@ -1,12 +1,49 @@
+# Python
 __pycache__/
 *.pyc
-.DS_Store
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 
-# User-Datenbank (enthält sensible Daten)
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Datenbank (lokale Entwicklung - NIEMALS committen!)
 users.db
+users.db-journal
+*.sqlite
+*.sqlite3
 
 # Temporäre Dateien
 *.pdf
 *.csv
 backup_*.json
 test_backup.json
+*.log
+*.tmp
+
+# Umgebung
+.env
+.venv/
+venv/
+ENV/
