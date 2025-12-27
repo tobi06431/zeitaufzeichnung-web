@@ -159,23 +159,23 @@ async function loadAllFormData() {
   }
 }
 
-// Auto-Save alle 60 Sekunden (Performance-Optimierung)
+// Auto-Save alle 45 Sekunden (Kompromiss: Performance + Datensicherheit)
 let autoSaveInterval;
 function startAutoSave() {
   if (autoSaveInterval) clearInterval(autoSaveInterval);
   
   autoSaveInterval = setInterval(() => {
     saveAllFormData();
-  }, 60000); // 60 Sekunden
+  }, 45000); // 45 Sekunden
 }
 
-// Bei Änderungen speichern (debounced - Performance-Optimierung)
+// Bei Änderungen speichern (debounced - Kompromiss: Performance + Datensicherheit)
 let saveTimeout;
 function triggerSave() {
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
     saveAllFormData();
-  }, 5000); // 5 Sekunden nach letzter Änderung (weniger DB-Load)
+  }, 3000); // 3 Sekunden nach letzter Änderung
 }
 
 // ========== LEGACY: Profil-Felder (weiterhin LocalStorage für schnelle UI) ==========
