@@ -142,8 +142,14 @@ async function loadAllFormData() {
           if (storageKey) {
             localStorage.setItem(storageKey, formData[name]);
             console.log('✅ Gottesdienste wiederhergestellt');
-            // Listen neu laden
+            // Listen neu laden UND Arrays aktualisieren
             window.loadGottesdienste && window.loadGottesdienste();
+            // Aktualisiere window.gottesdienste Array explizit
+            try {
+              window.gottesdienste = JSON.parse(formData[name]);
+            } catch (e) {
+              window.gottesdienste = [];
+            }
             window.updateListe && window.updateListe();
           }
           return;
@@ -154,8 +160,14 @@ async function loadAllFormData() {
           if (azKey) {
             localStorage.setItem(azKey, formData[name]);
             console.log('✅ Arbeitszeiten wiederhergestellt');
-            // Listen neu laden
+            // Listen neu laden UND Arrays aktualisieren
             window.loadArbeitszeiten && window.loadArbeitszeiten();
+            // Aktualisiere window.arbeitszeiten Array explizit
+            try {
+              window.arbeitszeiten = JSON.parse(formData[name]);
+            } catch (e) {
+              window.arbeitszeiten = [];
+            }
             window.updateAZListe && window.updateAZListe();
           }
           return;
