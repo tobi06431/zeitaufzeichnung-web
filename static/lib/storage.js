@@ -142,14 +142,15 @@ async function loadAllFormData() {
           if (storageKey) {
             localStorage.setItem(storageKey, formData[name]);
             console.log('✅ Gottesdienste wiederhergestellt');
-            // Listen neu laden UND Arrays aktualisieren
+            // Listen neu laden (lädt aus LocalStorage in internen Array)
             window.loadGottesdienste && window.loadGottesdienste();
-            // Aktualisiere window.gottesdienste Array explizit
+            // Aktualisiere auch window.gottesdienste für Zusammenfassung
             try {
               window.gottesdienste = JSON.parse(formData[name]);
             } catch (e) {
               window.gottesdienste = [];
             }
+            // Rendern
             window.updateListe && window.updateListe();
           }
           return;
@@ -160,14 +161,15 @@ async function loadAllFormData() {
           if (azKey) {
             localStorage.setItem(azKey, formData[name]);
             console.log('✅ Arbeitszeiten wiederhergestellt');
-            // Listen neu laden UND Arrays aktualisieren
+            // Listen neu laden (lädt aus LocalStorage in internen Array)
             window.loadArbeitszeiten && window.loadArbeitszeiten();
-            // Aktualisiere window.arbeitszeiten Array explizit
+            // Aktualisiere auch window.arbeitszeiten für Zusammenfassung
             try {
               window.arbeitszeiten = JSON.parse(formData[name]);
             } catch (e) {
               window.arbeitszeiten = [];
             }
+            // Rendern
             window.updateAZListe && window.updateAZListe();
           }
           return;
