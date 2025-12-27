@@ -114,16 +114,21 @@ async function loadAllFormData() {
       const serverDate = serverTimestamp ? new Date(serverTimestamp) : new Date(0);
       const localDate = localTimestamp ? new Date(localTimestamp) : new Date(0);
       
-      if (localDate > serverDate) {
-        console.log('⚠️ Lokale Daten sind neuer - überspringe Laden');
-        console.log(`   Lokal: ${localTimestamp}, Server: ${serverTimestamp}`);
+      // Nur überspringen wenn lokaler Timestamp SEHR frisch ist (< 5 Sekunden alt)
+      // Das bedeutet: User arbeitet gerade aktiv an diesem Gerät
+      const now = new Date();
+      const localAge = now - localDate; // Millisekunden
+      
+      if (localDate > serverDate && localAge < 5000) {
+        console.log('⚠️ Lokale Daten sind sehr frisch (< 5 Sek) - überspringe Laden');
+        console.log(`   Lokal: ${localTimestamp}, Server: ${serverTimestamp}, Alter: ${Math.round(localAge/1000)}s`);
         // Trigger Save um lokale Daten zum Server zu pushen
         setTimeout(() => saveAllFormData(), 1000);
         return false;
       }
       
-      console.log('✅ Server-Daten sind neuer - lade vom Server');
-      console.log(`   Server: ${serverTimestamp}, Lokal: ${localTimestamp || 'keine'}`);
+      console.log('✅ Lade Daten vom Server (Server neuer oder lokale Daten veraltet)');
+      console.log(`   Server: ${serverTimestamp}, Lokal: ${localTimestamp || 'keine'}, Lokal-Alter: ${Math.round(localAge/1000)}s`);
       
       const formData = JSON.parse(result.record.form_data);
       
