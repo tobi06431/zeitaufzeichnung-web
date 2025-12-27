@@ -132,7 +132,12 @@ async function loadAllFormData() {
       
       const formData = JSON.parse(result.record.form_data);
       
-      console.log('✅ Daten geladen:', { fieldCount: Object.keys(formData).length });
+      console.log('✅ Daten geladen:', { 
+        fieldCount: Object.keys(formData).length,
+        hasGottesdienste: '_gottesdienste_list' in formData,
+        hasArbeitszeiten: '_arbeitszeiten_list' in formData,
+        fields: Object.keys(formData)
+      });
       
       // WICHTIG: Erst normale Felder befüllen (Pfarrei, Tätigkeit, Monat)
       // DANN Listen, weil Storage-Keys von diesen Feldern abhängen!
