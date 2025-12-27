@@ -18,10 +18,21 @@ function getCurrentMonthYear() {
   return `${month}-${year}`;
 }
 
+// Monat/Jahr aus dem Formular (z.B. "12-2025") - VERWENDET FÜR SPEICHERUNG
+function getSelectedMonthYear() {
+  const monatjahrEl = document.getElementById('monatjahr_input');
+  if (monatjahrEl && monatjahrEl.value) {
+    // Konvertiere "12/2025" zu "12-2025"
+    return monatjahrEl.value.replace('/', '-');
+  }
+  // Fallback auf aktuellen Monat
+  return getCurrentMonthYear();
+}
+
 // ========== SERVER-BASIERTE SPEICHERUNG ==========
 
 async function saveAllFormData() {
-  const monthYear = getCurrentMonthYear();
+  const monthYear = getSelectedMonthYear();
   
   // Sammle alle Formulardaten
   const formData = {};
@@ -86,7 +97,7 @@ async function saveAllFormData() {
 }
 
 async function loadAllFormData() {
-  const monthYear = getCurrentMonthYear();
+  const monthYear = getSelectedMonthYear();
   
   console.log('📥 Lade Daten für:', monthYear);
   
@@ -194,7 +205,7 @@ function triggerSave() {
   }, 2000); // 2 Sekunden nach letzter Änderung
   
   // Aktualisiere lokalen Timestamp sofort bei jeder Änderung
-  const monthYear = getCurrentMonthYear();
+  const monthYear = getSelectedMonthYear();
   const timestampKey = `za_timestamp_${monthYear}`;
   localStorage.setItem(timestampKey, new Date().toISOString());
 }
@@ -268,6 +279,7 @@ function saveTimesForEntry(kirchort, datum, beginn, ende, satz) {
 // Export to global scope
 window.getCsrfToken = getCsrfToken;
 window.getCurrentMonthYear = getCurrentMonthYear;
+window.getSelectedMonthYear = getSelectedMonthYear;
 window.saveAllFormData = saveAllFormData;
 window.loadAllFormData = loadAllFormData;
 window.startAutoSave = startAutoSave;
