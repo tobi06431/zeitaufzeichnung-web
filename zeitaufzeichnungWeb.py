@@ -35,8 +35,18 @@ logging.basicConfig(
     ]
 )
 
-# Für Flash-Messages (bei Render später als ENV setzen!)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
+# Secret Key: MUSS in Production gesetzt sein!
+IS_PRODUCTION = bool(os.environ.get('DATABASE_URL'))
+secret_key = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("SECRET_KEY")
+
+if IS_PRODUCTION and not secret_key:
+    raise RuntimeError(
+        "FATAL: SECRET_KEY oder FLASK_SECRET_KEY muss in Production gesetzt sein!\n"
+        "Die App startet nicht ohne sicheren Secret Key."
+    )
+
+app.secret_key = secret_key or "dev-secret-only-for-local-development"
+logging.info(f"App läuft im {'PRODUCTION' if IS_PRODUCTION else 'DEVELOPMENT'} Modus")
 
 # Sichere Session-Einstellungen
 app.config['SESSION_COOKIE_SECURE'] = True  # Nur über HTTPS (in Production)
