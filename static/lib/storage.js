@@ -44,16 +44,20 @@ async function saveAllFormData() {
   
   // WICHTIG: Auch die gespeicherten Listen (Gottesdienste & Arbeitszeiten) übertragen
   const storageKey = window.getStorageKey ? window.getStorageKey() : '';
+  console.log('🔑 Gottesdienste Storage-Key beim Speichern:', storageKey);
   if (storageKey) {
     const gottesdiensteData = localStorage.getItem(storageKey);
+    console.log('📦 Gottesdienste-Daten gefunden:', gottesdiensteData ? 'JA' : 'NEIN', gottesdiensteData ? JSON.parse(gottesdiensteData).length : 0);
     if (gottesdiensteData) {
       formData['_gottesdienste_list'] = gottesdiensteData;
     }
   }
   
   const azKey = window.getAZStorageKey ? window.getAZStorageKey() : '';
+  console.log('🔑 Arbeitszeiten Storage-Key beim Speichern:', azKey);
   if (azKey) {
     const arbeitszeitenData = localStorage.getItem(azKey);
+    console.log('📦 Arbeitszeiten-Daten gefunden:', arbeitszeitenData ? 'JA' : 'NEIN', arbeitszeitenData ? JSON.parse(arbeitszeitenData).length : 0);
     if (arbeitszeitenData) {
       formData['_arbeitszeiten_list'] = arbeitszeitenData;
     }
@@ -157,8 +161,9 @@ async function loadAllFormData() {
         const el = document.getElementById(name);
         if (el) {
           el.value = formData[name];
-          // Trigger change event für abhängige Logik
+          // Trigger change event für abhängige Logik (Storage-Keys etc.)
           el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('input', { bubbles: true }));
         }
       });
       
